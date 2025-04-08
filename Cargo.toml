@@ -1,0 +1,17 @@
+[package]
+name = "unwrap_dot_rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gloo-timers = "0.3.0"
+yew = { git = "https://github.com/yewstack/yew", branch = "master", features = ["csr"] }
+rand = "0.9.0"
+getrandom = { version = "0.3.2", features = ["wasm_js"] }
+
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = "z"

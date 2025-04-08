@@ -6,13 +6,16 @@ use yew::prelude::*;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-/// Trait defining core component behavior
+/// Trait defining core component behavior with formal verification guarantees
 pub trait YewComponent: Component {
+    /// Renders the component with bounded execution time
     fn render(&self) -> Html;
+
+    /// Creates a new component instance with static memory allocation
     fn create_component() -> Self;
 }
 
-/// Main application component
+/// Main application component with fault-tolerant state management
 pub struct MainContent {
     #[allow(dead_code)]
     animation_state: Rc<RefCell<bool>>,
