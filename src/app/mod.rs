@@ -1,7 +1,11 @@
 // src/app/mod.rs
 mod typing_animation; // Declare the module
+mod social_links;
 
 pub use typing_animation::TypingAnimation; // Make TypingAnimation public
+pub use social_links::SocialLinks;
+
+
 
 use yew::prelude::*;
 use std::rc::Rc;
@@ -49,6 +53,7 @@ impl Component for MainContent {
                     // Optional: Blinking cursor effect after the animation
                     // <span class="cursor-blink">{"_"}</span>
                 </div>
+            <SocialLinks />
             </main>
         }
     }

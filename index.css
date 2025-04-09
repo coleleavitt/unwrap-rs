@@ -145,3 +145,20 @@ body {
     text-shadow: 0 0 10px #f92672;
     transform: scale(1.2);
 }
+
+.social-links {
+    animation: fadeIn 0.6s ease-out 0.4s both;
+}
+
+
+.social-links a {
+    color: #66d9ef;
+    text-decoration: none;
+    margin: 0 10px;
+    font-size: 1.5rem;
+    transition: color 0.3s ease;
+}
+.social-links a:hover {
+    color: #f92672;
+    text-shadow: 0 0 10px #f92672;
+}
