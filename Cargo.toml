@@ -8,6 +8,7 @@ gloo-timers = "0.3.0"
 yew = { git = "https://github.com/yewstack/yew", branch = "master", features = ["csr"] }
 rand = "0.9.0"
 getrandom = { version = "0.3.2", features = ["wasm_js"] }
+log = "0.4.27"
 
 
 [profile.release]

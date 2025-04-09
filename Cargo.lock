@@ -923,6 +923,7 @@ version = "0.1.0"
 dependencies = [
  "getrandom 0.3.2",
  "gloo-timers",
+ "log",
  "rand",
  "yew",
 ]
