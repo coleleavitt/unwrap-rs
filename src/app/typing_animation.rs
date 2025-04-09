@@ -135,7 +135,7 @@ impl CybertronianMapper {
     fn map_random_symbol(rng: &mut impl Rng) -> char {
         // Pool of visually interesting symbols inspired by Cybertronian script
         let cyber_random_chars = "⏃ᗷᑕᗞ⟊⎎Ꮆ⋔⟙⟗Ꮶ⅃⏁ᑎ〇℘Ϙ尺⟅ナ⋒٧山〤Ꭹㄗค♭ᑢↁ⋿ℱᎶЂ|ן⊗≠ፐ∪∨พу⊼⋕⦿|ᒿ≡⫓⫔⏀⫛∞ⴤ•⦑⦒⎼⊕⧠";
-        let index = rng.gen_range(0..cyber_random_chars.len());
+        let index = rng.random_range(0..cyber_random_chars.len());
         cyber_random_chars.chars().nth(index).unwrap_or('⧠')
     }
 }
@@ -153,7 +153,7 @@ impl YewComponent for TypingAnimation {
 
     fn create_component() -> Self {
         let target_text = ".unwrap()";
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         const EXTRA_PARTICLES: usize = 80;
         let width = 300.0;
         let height = 150.0;
@@ -303,9 +303,9 @@ impl Component for TypingAnimation {
             Msg::ShiftGravityCenter => {
                 let mut gravity_center = self.gravity_center.borrow_mut();
                 let mut rng = self.rng.borrow_mut();
-                gravity_center.0 = (gravity_center.0 + rng.gen_range(-30.0..30.0))
+                gravity_center.0 = (gravity_center.0 + rng.random_range(-30.0..30.0))
                     .clamp(self.width * 0.1, self.width * 0.9);
-                gravity_center.1 = (gravity_center.1 + rng.gen_range(-20.0..20.0))
+                gravity_center.1 = (gravity_center.1 + rng.random_range(-20.0..20.0))
                     .clamp(self.height * 0.1, self.height * 0.9);
                 drop(rng);
                 self.schedule_gravity_shift(ctx);
@@ -314,7 +314,7 @@ impl Component for TypingAnimation {
             Msg::ChangeColorScheme => {
                 let mut color_scheme = self.color_scheme.borrow_mut();
                 let mut rng = self.rng.borrow_mut();
-                let hue_shift = rng.gen_range(-15..15) as f32;
+                let hue_shift = rng.random_range(-15..15) as f32;
                 color_scheme.primary = Self::shift_color_hue(&color_scheme.primary, hue_shift);
                 color_scheme.secondary = Self::shift_color_hue(&color_scheme.secondary, hue_shift + 10.0);
                 drop(rng);
@@ -364,9 +364,9 @@ impl TypingAnimation {
         for (i, ch) in target_text.chars().enumerate() {
             let x = text_start_x + (i as f32 * 20.0);
             particles.push(Particle {
-                x: rng.gen_range(0.0..width),
-                y: rng.gen_range(0.0..height),
-                z: rng.gen_range(-30.0..30.0),
+                x: rng.random_range(0.0..width),
+                y: rng.random_range(0.0..height),
+                z: rng.random_range(-30.0..30.0),
                 target_x: x,
                 target_y: text_y,
                 target_z: 0.0,
@@ -374,17 +374,17 @@ impl TypingAnimation {
                 symbol: CybertronianMapper::map_random_symbol(rng),
                 // Map target character to Cybertronian equivalent
                 target_symbol: CybertronianMapper::map_char(ch),
-                vx: rng.gen_range(-2.5..2.5),
-                vy: rng.gen_range(-2.5..2.5),
-                vz: rng.gen_range(-1.5..1.5),
+                vx: rng.random_range(-2.5..2.5),
+                vy: rng.random_range(-2.5..2.5),
+                vz: rng.random_range(-1.5..1.5),
                 opacity: 0.0,
-                scale: rng.gen_range(0.2..0.8),
-                rotation: rng.gen_range(0.0..360.0),
+                scale: rng.random_range(0.2..0.8),
+                rotation: rng.random_range(0.0..360.0),
                 is_text: true,
                 particle_type: ParticleType::Core,
-                energy: rng.gen_range(0.8..1.2),
+                energy: rng.random_range(0.8..1.2),
                 age: 0.0,
-                life: rng.gen_range(5.0..10.0),
+                life: rng.random_range(5.0..10.0),
             });
         }
 
@@ -399,29 +399,29 @@ impl TypingAnimation {
             };
 
             let life = match particle_type {
-                ParticleType::Fragment | ParticleType::Connector => rng.gen_range(2.0..5.0),
-                _ => rng.gen_range(4.0..8.0),
+                ParticleType::Fragment | ParticleType::Connector => rng.random_range(2.0..5.0),
+                _ => rng.random_range(4.0..8.0),
             };
 
             particles.push(Particle {
-                x: rng.gen_range(-width*0.1..width*1.1),
-                y: rng.gen_range(-height*0.1..height*1.1),
-                z: rng.gen_range(-60.0..60.0),
-                target_x: rng.gen_range(text_start_x..text_start_x + text_width),
-                target_y: text_y + rng.gen_range(-40.0..40.0),
-                target_z: rng.gen_range(-20.0..20.0),
+                x: rng.random_range(-width*0.1..width*1.1),
+                y: rng.random_range(-height*0.1..height*1.1),
+                z: rng.random_range(-60.0..60.0),
+                target_x: rng.random_range(text_start_x..text_start_x + text_width),
+                target_y: text_y + rng.random_range(-40.0..40.0),
+                target_z: rng.random_range(-20.0..20.0),
                 // Random Cybertronian symbols for non-text particles
                 symbol: CybertronianMapper::map_random_symbol(rng),
                 target_symbol: CybertronianMapper::map_random_symbol(rng),
-                vx: rng.gen_range(-3.5..3.5),
-                vy: rng.gen_range(-3.5..3.5),
-                vz: rng.gen_range(-2.0..2.0),
+                vx: rng.random_range(-3.5..3.5),
+                vy: rng.random_range(-3.5..3.5),
+                vz: rng.random_range(-2.0..2.0),
                 opacity: 0.0,
-                scale: rng.gen_range(0.3..0.9),
-                rotation: rng.gen_range(0.0..360.0),
+                scale: rng.random_range(0.3..0.9),
+                rotation: rng.random_range(0.0..360.0),
                 is_text: false,
                 particle_type,
-                energy: rng.gen_range(0.5..1.5),
+                energy: rng.random_range(0.5..1.5),
                 age: 0.0,
                 life,
             });
@@ -550,14 +550,14 @@ impl TypingAnimation {
                     p.opacity = (p.opacity + delta_time * 2.0).min(0.7);
 
                     // Random movement bursts
-                    if rng.gen_bool(0.06) {
-                        p.vx += rng.gen_range(-1.5..1.5);
-                        p.vy += rng.gen_range(-1.5..1.5);
-                        p.vz += rng.gen_range(-0.8..0.8);
+                    if rng.random_bool(0.06) {
+                        p.vx += rng.random_range(-1.5..1.5);
+                        p.vy += rng.random_range(-1.5..1.5);
+                        p.vz += rng.random_range(-0.8..0.8);
                     }
 
                     // Symbol randomization with Cybertronian symbols
-                    if rng.gen_bool(0.15) {
+                    if rng.random_bool(0.15) {
                         p.symbol = Self::random_char(rng);
                     }
                 }
@@ -574,7 +574,7 @@ impl TypingAnimation {
                     p.vx += dx * force * p.energy * delta_time;
                     p.vy += dy * force * p.energy * delta_time;
 
-                    if rng.gen_bool(0.1) {
+                    if rng.random_bool(0.1) {
                         p.symbol = Self::random_char(rng);
                     }
                 }
@@ -591,9 +591,9 @@ impl TypingAnimation {
                     p.vy += dy * attraction * p.energy * delta_time;
 
                     // Text particles begin showing their target Cybertronian symbols
-                    if p.is_text && rng.gen_bool(0.03) {
+                    if p.is_text && rng.random_bool(0.03) {
                         p.symbol = p.target_symbol;
-                    } else if rng.gen_bool(0.12) {
+                    } else if rng.random_bool(0.12) {
                         p.symbol = Self::random_char(rng);
                     }
                 }
@@ -617,7 +617,7 @@ impl TypingAnimation {
                         p.scale = p.scale * 0.9 + 0.4 * 0.1;
                         p.opacity = p.opacity * 0.9 + 0.6 * 0.1;
 
-                        if rng.gen_bool(0.15) {
+                        if rng.random_bool(0.15) {
                             p.symbol = p.target_symbol;
                         }
                     } else {
@@ -635,7 +635,7 @@ impl TypingAnimation {
 
                         p.opacity = (p.opacity - delta_time * 0.8).max(0.05);
 
-                        if rng.gen_bool(0.1) {
+                        if rng.random_bool(0.1) {
                             p.symbol = Self::random_char(rng);
                         }
                     }
@@ -706,9 +706,9 @@ impl TypingAnimation {
                 p.vz += dz * force_factor * delta_time;
 
                 // Start showing target Cybertronian symbol more consistently
-                if matches!(sub_phase, ConvergeSubPhase::Refinement | ConvergeSubPhase::Solidification) || rng.gen_bool(0.3) {
+                if matches!(sub_phase, ConvergeSubPhase::Refinement | ConvergeSubPhase::Solidification) || rng.random_bool(0.3) {
                     p.symbol = p.target_symbol;
-                } else if rng.gen_bool(0.1) {
+                } else if rng.random_bool(0.1) {
                     p.symbol = Self::random_char(rng);
                 }
 
@@ -769,9 +769,9 @@ impl TypingAnimation {
                     ParticleType::Fragment | ParticleType::Connector => {
                         // Initial burst then fade
                         if p.age < 0.5 {
-                            p.vx += rng.gen_range(-1.0..1.0) * p.energy;
-                            p.vy += rng.gen_range(-1.0..1.0) * p.energy;
-                            p.vz += rng.gen_range(-0.5..0.5) * p.energy;
+                            p.vx += rng.random_range(-1.0..1.0) * p.energy;
+                            p.vy += rng.random_range(-1.0..1.0) * p.energy;
+                            p.vz += rng.random_range(-0.5..0.5) * p.energy;
                         }
 
                         p.opacity = (p.opacity - delta_time * 3.0).max(0.0);
@@ -782,7 +782,7 @@ impl TypingAnimation {
                 }
 
                 // Non-text particles continue to randomize Cybertronian symbols
-                if p.opacity > 0.0 && rng.gen_bool(0.08) {
+                if p.opacity > 0.0 && rng.random_bool(0.08) {
                     p.symbol = Self::random_char(rng);
                 }
             }
@@ -869,38 +869,38 @@ impl TypingAnimation {
                     }
                     StableSubPhase::Shimmer => {
                         // Random shimmer effect
-                        p.z = base_z + rng.gen_range(-1.5..1.5);
-                        p.scale = 1.0 + rng.gen_range(-0.03..0.03);
+                        p.z = base_z + rng.random_range(-1.5..1.5);
+                        p.scale = 1.0 + rng.random_range(-0.03..0.03);
 
-                        if rng.gen_bool(0.05) {
+                        if rng.random_bool(0.05) {
                             p.symbol = Self::random_char(rng);
                         } else {
                             p.symbol = p.target_symbol;
                         }
 
-                        p.x = base_x + rng.gen_range(-0.2..0.2);
-                        p.y = base_y + rng.gen_range(-0.2..0.2);
+                        p.x = base_x + rng.random_range(-0.2..0.2);
+                        p.y = base_y + rng.random_range(-0.2..0.2);
                     }
                     StableSubPhase::PreDissolve => {
                         // Preparation for dissolve phase
-                        if rng.gen_bool(0.05) {
-                            p.vx += rng.gen_range(-0.3..0.3);
-                            p.vy += rng.gen_range(-0.3..0.3);
-                            p.vz += rng.gen_range(-0.2..0.2);
+                        if rng.random_bool(0.05) {
+                            p.vx += rng.random_range(-0.3..0.3);
+                            p.vy += rng.random_range(-0.3..0.3);
+                            p.vz += rng.random_range(-0.2..0.2);
                         }
 
                         p.x = base_x + p.vx;
                         p.y = base_y + p.vy;
                         p.z = base_z + p.vz;
 
-                        if rng.gen_bool(0.03) {
+                        if rng.random_bool(0.03) {
                             p.symbol = Self::random_char(rng);
                         } else {
                             p.symbol = p.target_symbol;
                         }
 
-                        p.scale = 1.0 + rng.gen_range(-0.05..0.05);
-                        p.opacity = 1.0 - rng.gen_range(0.0..0.1);
+                        p.scale = 1.0 + rng.random_range(-0.05..0.05);
+                        p.opacity = 1.0 - rng.random_range(0.0..0.1);
                     }
                 }
 
@@ -918,7 +918,7 @@ impl TypingAnimation {
                 }
 
                 // Occasional symbol randomization with Cybertronian symbols
-                if p.opacity > 0.0 && rng.gen_bool(0.03) {
+                if p.opacity > 0.0 && rng.random_bool(0.03) {
                     p.symbol = Self::random_char(rng);
                 }
             }
@@ -973,12 +973,12 @@ impl TypingAnimation {
             let force = explosion_factor * 80.0 / dist_sq;
 
             // Apply explosion forces with randomization
-            p.vx += dx * force * p.energy * rng.gen_range(0.7..1.3) * delta_time;
-            p.vy += dy * force * p.energy * rng.gen_range(0.7..1.3) * delta_time;
+            p.vx += dx * force * p.energy * rng.random_range(0.7..1.3) * delta_time;
+            p.vy += dy * force * p.energy * rng.random_range(0.7..1.3) * delta_time;
 
             // Add Z-axis movement during explosion
             if matches!(sub_phase, DissolveSubPhase::Explosion) {
-                p.vz += rng.gen_range(-1.0..1.0) * explosion_factor * p.energy * delta_time;
+                p.vz += rng.random_range(-1.0..1.0) * explosion_factor * p.energy * delta_time;
             }
 
             // Apply velocities
@@ -1002,7 +1002,7 @@ impl TypingAnimation {
             p.rotation = (p.rotation + p.vx * 4.0) % 360.0;
 
             // Frequent symbol randomization with Cybertronian symbols
-            if rng.gen_bool(0.2) {
+            if rng.random_bool(0.2) {
                 p.symbol = Self::random_char(rng);
             }
 
