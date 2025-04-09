@@ -9,6 +9,7 @@
   <component name="ChangeListManager">
     <list default="true" id="182c0dcb-f173-4901-a3ea-0794a979ac76" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/index.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/typing_animation.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/typing_animation.rs" afterDir="false" />
     </list>
@@ -41,7 +42,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "pixel-based",
+    "git-widget-placeholder": "transformium__test",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -74,7 +75,7 @@
       <workItem from="1744143382686" duration="172000" />
       <workItem from="1744143563029" duration="384000" />
       <workItem from="1744143951710" duration="298000" />
-      <workItem from="1744144260231" duration="10756000" />
+      <workItem from="1744144260231" duration="13149000" />
     </task>
     <servers />
   </component>

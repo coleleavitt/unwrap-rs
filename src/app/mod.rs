@@ -1,12 +1,14 @@
-mod typing_animation;
+// src/app/mod.rs
+mod typing_animation; // Declare the module
 
-pub use typing_animation::TypingAnimation;
+pub use typing_animation::TypingAnimation; // Make TypingAnimation public
 
 use yew::prelude::*;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-/// Trait defining core component behavior with formal verification guarantees
+/// Trait defining core component behavior (ensure this matches your actual trait if different)
+/// If this trait isn't actually used by TypingAnimation directly, it can be removed.
 pub trait YewComponent: Component {
     /// Renders the component with bounded execution time
     fn render(&self) -> Html;
@@ -15,10 +17,11 @@ pub trait YewComponent: Component {
     fn create_component() -> Self;
 }
 
-/// Main application component with fault-tolerant state management
+/// Main application component
+#[derive(Debug)] // Add Debug derive
 pub struct MainContent {
     #[allow(dead_code)]
-    animation_state: Rc<RefCell<bool>>,
+    animation_state: Rc<RefCell<bool>>, // Example state, currently unused
 }
 
 impl Component for MainContent {
@@ -31,10 +34,21 @@ impl Component for MainContent {
         }
     }
 
+    // Removed update method as there are no messages
+
     fn view(&self, _ctx: &Context<Self>) -> Html {
         html! {
+            // Use the CSS class for the main container
             <main class="radiation-hardened-container">
-                <TypingAnimation />
+                // Container specifically for the text and animation area
+                <div class="transformium-container">
+                    // Static text part
+                    <span class="base-text">{"Result<T, E>"}</span> // Updated base text example
+                    // The animation component itself
+                    <TypingAnimation />
+                    // Optional: Blinking cursor effect after the animation
+                    // <span class="cursor-blink">{"_"}</span>
+                </div>
             </main>
         }
     }

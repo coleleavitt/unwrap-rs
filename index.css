@@ -1,3 +1,4 @@
+/* index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,141 +8,183 @@ html,
 body {
     height: 100%;
     margin: 0;
-    overflow: hidden;
+    overflow: hidden; /* Prevent scrollbars */
+    background-color: #111; /* Dark base background */
 }
 
 body {
     align-items: center;
     display: flex;
     justify-content: center;
-    background: linear-gradient(to bottom right, #1a1a1a, #004d2e);
-    font-size: 1.5rem;
+    /* Use a simpler gradient or solid color if needed */
+    background: linear-gradient(to bottom right, #1c1c1e, #102a1e); /* Darker gradient */
+    font-size: 1.5rem; /* Base font size */
 }
 
-/* Container styles */
+/* Overall container for the application content */
 .radiation-hardened-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
-    width: 100vw;
-    color: #e6e6e6;
-    font-family: 'Courier New', monospace;
-    position: relative;
-    overflow: hidden;
+    height: 100vh; /* Full viewport height */
+    width: 100vw;  /* Full viewport width */
+    color: #cccccc; /* Lighter gray default text */
+    font-family: 'Courier New', Courier, monospace; /* Monospace font */
+    position: relative; /* Needed for absolute positioning of children */
+    overflow: hidden; /* Clip any overflow */
 }
 
-/* Animation container styles */
+/* Container specifically for the "Result" text and the animation */
 .transformium-container {
-    position: relative;
-    width: 100%;
-    height: 300px;
+    position: relative; /* Positioning context for animation field */
+    width: auto; /* Allow width to adjust to content */
+    height: auto; /* Allow height to adjust */
     display: flex;
-    align-items: center;
+    align-items: baseline; /* Align text baseline */
     justify-content: center;
-    perspective: 800px;
+    /* perspective: 800px; // Perspective applied to the field itself is often better */
 }
 
-/* Base text styles */
+/* Style for the static "Result<T, E>" part */
 .base-text {
     color: #e6e6e6;
-    font-size: 2.5rem;
+    font-size: 2.5rem; /* Larger font size */
     font-weight: bold;
-    opacity: 0.3;
-    z-index: 1;
-    margin-right: 0.5rem;
-    text-shadow: 0 0 10px rgba(230, 230, 230, 0.3);
+    opacity: 0.6; /* Slightly more visible */
+    z-index: 1; /* Behind particles */
+    margin-right: 0.5rem; /* Space before animation */
+    text-shadow: 0 0 8px rgba(230, 230, 230, 0.2); /* Subtle glow */
+    white-space: nowrap; /* Prevent wrapping */
 }
 
-/* Transformium field */
+/* The area where the animation happens (.unwrap()) */
 .transformium-field {
-    position: relative;
-    width: 300px;
-    height: 150px;
-    font-family: 'Courier New', monospace;
+    position: relative; /* Crucial for particle positioning */
+    width: 180px; /* Approximate width for ".unwrap()" - adjust as needed */
+    height: 60px; /* Approximate height */
+    font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
-    font-size: 1.5rem;
-    transform-style: preserve-3d;
+    font-size: 2.5rem; /* Match base-text size */
+    transform-style: preserve-3d; /* Enable 3D positioning for children */
+    perspective: 800px; /* Apply perspective here */
+    z-index: 2; /* Above base-text */
+    /* background set via inline style in Rust (transparent) */
 }
 
-/* Particle styles */
-.particle {
+/* Container holding all the particle spans */
+.transformium-particles {
+    position: absolute; /* Fill the parent field */
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    transform-style: preserve-3d; /* Inherit 3D context */
+    pointer-events: none; /* Allow clicks to pass through */
+}
+
+/* SVG layer for connection lines */
+.connections-layer {
     position: absolute;
-    text-shadow: 0 0 8px currentColor;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    backface-visibility: hidden;
-    will-change: transform, opacity, color;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1; /* Between background and particles */
+    pointer-events: none;
+    opacity: 0.6; /* Slightly transparent lines */
+    overflow: visible; /* Allow lines slightly outside bounds */
 }
 
+.connection-line {
+    /* Transition stroke properties */
+    transition: stroke-opacity 0.2s linear, stroke-width 0.1s linear;
+}
+
+/* Individual particle style */
+.particle {
+    position: absolute; /* Required for left/top positioning */
+    text-shadow: 0 0 6px currentColor; /* Dynamic color glow */
+    /* CSS transitions removed - letting Rust handle updates directly */
+    /* transition: transform 0.05s linear, opacity 0.1s linear; */
+    backface-visibility: hidden; /* Performance hint */
+    will-change: transform, opacity, color; /* Performance hint */
+    user-select: none; /* Prevent text selection */
+    pointer-events: none; /* Prevent interaction */
+    line-height: 1; /* Ensure consistent vertical alignment */
+    display: inline-block; /* Needed for transforms */
+}
+
+/* Optional: Hover effect (mostly for debugging, as particles move fast) */
 .particle:hover {
-    color: #f92672 !important;
-    text-shadow: 0 0 12px #f92672;
-    transform: scale(1.5) rotate(5deg);
-    z-index: 10;
+    color: #ff55aaff !important; /* Bright pink hover */
+    text-shadow: 0 0 12px #ff55aa;
+    transform: scale(1.5) rotate(5deg) !important; /* Force scale/rotation */
+    z-index: 100 !important; /* Ensure hover is on top */
 }
 
-/* Cursor animation */
+/* Blinking cursor effect (add span with this class in MainContent::view if desired) */
 @keyframes blink {
     from, to { opacity: 1; }
     50% { opacity: 0; }
 }
 
 .cursor-blink {
-    color: #66d9ef;
+    color: #66d9ef; /* Match primary color */
+    font-size: 2.5rem; /* Match text size */
     animation: blink 1s step-end infinite;
-    margin-left: 2px;
+    margin-left: 2px; /* Small space after animation */
+    font-weight: bold;
 }
 
-/* Metallic glow effect */
+/* Metallic glow effect applied to text particles during stable phase */
 @keyframes metallic-pulse {
-    0% { text-shadow: 0 0 5px #66d9ef, 0 0 10px #66d9ef; }
-    50% { text-shadow: 0 0 10px #66d9ef, 0 0 20px #66d9ef; }
-    100% { text-shadow: 0 0 5px #66d9ef, 0 0 10px #66d9ef; }
+    0% { text-shadow: 0 0 4px currentColor, 0 0 8px currentColor; filter: brightness(1.0); }
+    50% { text-shadow: 0 0 8px currentColor, 0 0 16px currentColor; filter: brightness(1.2); }
+    100% { text-shadow: 0 0 4px currentColor, 0 0 8px currentColor; filter: brightness(1.0); }
 }
 
 .metallic-glow {
-    animation: metallic-pulse 2s infinite;
+    animation: metallic-pulse 2.5s infinite ease-in-out;
 }
 
-/* Transformium flow effect */
+/* Optional: Flow effect (can be added via class in Rust render_particles) */
 @keyframes flow {
-    0% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(5px) rotate(2deg); }
-    100% { transform: translateY(0) rotate(0deg); }
+    0% { transform: translate3d(-50%, -50%, var(--z, 0px)) translateY(0) rotate(0deg); }
+    50% { transform: translate3d(-50%, -50%, var(--z, 0px)) translateY(2px) rotate(1deg); }
+    100% { transform: translate3d(-50%, -50%, var(--z, 0px)) translateY(0) rotate(0deg); }
 }
 
-.flow-effect {
-    animation: flow 3s ease-in-out infinite;
-    animation-delay: calc(var(--flow-delay, 0) * 0.1s);
+/* Apply flow effect if class is present */
+/* .flow-effect { */
+/* animation: flow 3s ease-in-out infinite; */
+/* animation-delay: calc(var(--flow-delay, 0) * 0.05s); */ /* Use CSS var if set */
+/* } */
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .base-text,
+    .transformium-field,
+    .cursor-blink {
+        font-size: 1.8rem; /* Reduce font size */
+    }
+    .transformium-field {
+        width: 130px; /* Adjust width */
+        height: 50px;
+    }
 }
 
-/* Legacy pixel grid styles (kept for compatibility) */
-.pixel-grid {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-.pixel-row {
-    display: flex;
-    height: 0.8em;
-}
-
-.pixel {
-    width: 0.6em;
-    height: 0.8em;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    color: #66d9ef;
-    text-shadow: 0 0 5px #66d9ef;
-    transition: all 0.1s ease;
-    font-size: 0.8em;
-}
-
-.pixel:hover {
-    color: #f92672;
-    text-shadow: 0 0 10px #f92672;
-    transform: scale(1.2);
+@media (max-width: 480px) {
+    .base-text,
+    .transformium-field,
+    .cursor-blink {
+        font-size: 1.5rem; /* Further reduce font size */
+    }
+    .transformium-field {
+        width: 110px; /* Adjust width */
+        height: 40px;
+    }
+    .base-text {
+        margin-right: 0.2rem;
+    }
 }
