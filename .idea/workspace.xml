@@ -10,7 +10,6 @@
     <list default="true" id="182c0dcb-f173-4901-a3ea-0794a979ac76" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/index.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/typing_animation.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/typing_animation.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -19,6 +18,11 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="transform-test-2" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="JsbtTreeLayoutManager">
@@ -75,7 +79,7 @@
       <workItem from="1744143382686" duration="172000" />
       <workItem from="1744143563029" duration="384000" />
       <workItem from="1744143951710" duration="298000" />
-      <workItem from="1744144260231" duration="13149000" />
+      <workItem from="1744144260231" duration="21793000" />
     </task>
     <servers />
   </component>
