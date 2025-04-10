@@ -9,7 +9,6 @@ pub struct ErrorBoundary {
     error_state: Rc<RefCell<[Option<String>; 3]>>, // Triple redundant error storage
     has_error: Rc<RefCell<[bool; 3]>>, // Triple redundant error flags
 }
-
 pub enum ErrorBoundaryMsg {
     CatchError(String),
     ClearError,

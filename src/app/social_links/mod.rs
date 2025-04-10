@@ -57,8 +57,8 @@ impl SafeLink {
         } else if !valid_paths.is_empty() {
             valid_paths[0].clone()
         } else {
-            // Fallback to generic icon
-            "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg".to_string()
+            // Fallback to generic icon - now using local path
+            "icons/github-original.svg".to_string()
         }
     }
 
@@ -94,22 +94,22 @@ impl Component for SocialLinks {
     type Properties = ();
 
     fn create(ctx: &Context<Self>) -> Self {
-        // Create hardened links with redundancy
+        // Create hardened links with redundancy using local icon paths
         let links = vec![
             SafeLink::new(
                 "https://github.com/coleleavitt",
-                "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg",
-                ""
+                "icons/github-original.svg",
+                "GitHub"
             ),
             SafeLink::new(
-                "https://www.linkedin.com/in/cole-leavitt/",
-                "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linkedin/linkedin-original.svg",
-                ""
+                "https://www.linkedin.com/in/coleleavitt/",
+                "icons/linkedin.svg",
+                "LinkedIn"
             ),
             SafeLink::new(
                 "mailto:cole@unwrap.rs",
-                "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/icons/envelope-fill.svg",
-                ""
+                "icons/envelope-fill.svg",
+                "Email"
             ),
         ];
 
@@ -217,6 +217,7 @@ impl Component for SocialLinks {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum SocialLinksMsg {
     SetHover(usize),
