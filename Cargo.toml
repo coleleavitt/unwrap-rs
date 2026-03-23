@@ -2,6 +2,10 @@
 name = "unwrap-rs"
 version = "0.1.0"
 edition = "2021"
+description = "Personal website at unwrap.rs - Leptos + WASM + Tailwind"
+repository = "https://github.com/coleleavitt/unwrap-rs"
+license = "MIT OR Apache-2.0"
+authors = ["Cole Leavitt <coleleavitt@protonmail.com>"]
 
 [dependencies]
 leptos = { version = "0.7", features = ["csr"] }
