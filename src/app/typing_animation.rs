@@ -1,19 +1,10 @@
-// src/app/typing_animation.rs
-#![allow(unused_imports, dead_code)]
-
-// --- Imports ---
-use super::YewComponent;
-use gloo_timers::callback::Timeout;
+use gloo_timers::callback::{Interval, Timeout};
 use rand::rngs::ThreadRng;
 use rand::Rng;
 use std::cell::RefCell;
-use std::f32::consts::PI;
 use std::rc::Rc;
 use yew::prelude::*;
 
-// --- Core Structs ---
-
-/// Triple-redundant animation system for fluid metal transformation using Cybertronian script.
 pub struct TypingAnimation {
     particles: Rc<RefCell<Vec<Particle>>>,
     connections: Rc<RefCell<Vec<Connection>>>,
@@ -26,9 +17,14 @@ pub struct TypingAnimation {
     rng: Rc<RefCell<ThreadRng>>,
     width: f32,
     height: f32,
+    // Timer handles - stored to prevent memory leaks and enable cancellation
+    tick_timer: Rc<RefCell<Option<Timeout>>>,
+    phase_timer: Rc<RefCell<Option<Timeout>>>,
+    _gravity_interval: Interval,
+    _color_interval: Interval,
+    reset_timer: Rc<RefCell<Option<Timeout>>>,
 }
 
-/// Connection between particles for metallic mesh effect
 #[derive(Clone)]
 struct Connection {
     particle1_idx: usize,
@@ -38,7 +34,6 @@ struct Connection {
     active: bool,
 }
 
-/// Color scheme with guaranteed valid formats
 #[derive(Clone)]
 struct ColorScheme {
     primary: String,
@@ -47,39 +42,79 @@ struct ColorScheme {
     background: String,
 }
 
-/// Particle with triple modular redundancy for critical properties
 #[derive(Clone)]
 struct Particle {
-    x: f32, y: f32, z: f32,
-    target_x: f32, target_y: f32, target_z: f32,
-    symbol: char, target_symbol: char,
-    vx: f32, vy: f32, vz: f32,
-    opacity: f32, scale: f32, rotation: f32,
-    is_text: bool, particle_type: ParticleType,
+    x: f32,
+    y: f32,
+    z: f32,
+    target_x: f32,
+    target_y: f32,
+    target_z: f32,
+    symbol: char,
+    target_symbol: char,
+    vx: f32,
+    vy: f32,
+    vz: f32,
+    opacity: f32,
+    scale: f32,
+    rotation: f32,
+    is_text: bool,
+    particle_type: ParticleType,
     energy: f32,
-    age: f32, life: f32,
+    age: f32,
+    life: f32,
 }
 
-// --- Enums ---
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum ParticleType { Core, Orbiter, Swarm, Fragment, Connector }
+enum ParticleType {
+    Core,
+    Orbiter,
+    Swarm,
+    Fragment,
+    Connector,
+}
 
 #[derive(Clone, Debug)]
-enum AnimationPhase { Scatter(ScatterSubPhase), Converge(ConvergeSubPhase), Stable(StableSubPhase), Dissolve(DissolveSubPhase) }
+enum AnimationPhase {
+    Scatter(ScatterSubPhase),
+    Converge(ConvergeSubPhase),
+    Stable(StableSubPhase),
+    Dissolve(DissolveSubPhase),
+}
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum ScatterSubPhase { Initial, Expansion, Contraction, PreConverge }
+enum ScatterSubPhase {
+    Initial,
+    Expansion,
+    Contraction,
+    PreConverge,
+}
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum ConvergeSubPhase { Alignment, Formation, Refinement, Solidification }
+enum ConvergeSubPhase {
+    Alignment,
+    Formation,
+    Refinement,
+    Solidification,
+}
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum StableSubPhase { Pulse, Orbit, Ripple, Shimmer, PreDissolve }
+enum StableSubPhase {
+    Pulse,
+    Orbit,
+    Ripple,
+    Shimmer,
+    PreDissolve,
+}
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum DissolveSubPhase { Fracture, Explosion, Dispersion, Fade }
+enum DissolveSubPhase {
+    Fracture,
+    Explosion,
+    Dispersion,
+    Fade,
+}
 
-/// Message types with bounded execution time
 pub enum Msg {
     Tick,
     Reset,
@@ -88,77 +123,140 @@ pub enum Msg {
     ChangeColorScheme,
 }
 
-// --- Cybertronian Script Implementation ---
-
-/// Maps Latin characters to Cybertronian-like Unicode symbols
 struct CybertronianMapper;
 
 impl CybertronianMapper {
-    /// Maps a Latin character to a Cybertronian-like Unicode approximation
     fn map_char(c: char) -> char {
         match c {
             // Uppercase letters based on provided Cybertronian alphabet images
-            'A' => '⏃', 'B' => 'ᗷ', 'C' => 'ᑕ', 'D' => 'ᗞ', 'E' => '⟊',
-            'F' => '⎎', 'G' => 'Ꮆ', 'H' => '⋔', 'I' => '⟙', 'J' => '⟗',
-            'K' => 'Ꮶ', 'L' => '⅃', 'M' => '⏁', 'N' => 'ᑎ', 'O' => '〇',
-            'P' => '℘', 'Q' => 'Ϙ', 'R' => '尺', 'S' => '⟅', 'T' => 'ナ',
-            'U' => '⋒', 'V' => '٧', 'W' => '山', 'X' => '〤', 'Y' => 'Ꭹ',
+            'A' => '⏃',
+            'B' => 'ᗷ',
+            'C' => 'ᑕ',
+            'D' => 'ᗞ',
+            'E' => '⟊',
+            'F' => '⎎',
+            'G' => 'Ꮆ',
+            'H' => '⋔',
+            'I' => '⟙',
+            'J' => '⟗',
+            'K' => 'Ꮶ',
+            'L' => '⅃',
+            'M' => '⏁',
+            'N' => 'ᑎ',
+            'O' => '〇',
+            'P' => '℘',
+            'Q' => 'Ϙ',
+            'R' => '尺',
+            'S' => '⟅',
+            'T' => 'ナ',
+            'U' => '⋒',
+            'V' => '٧',
+            'W' => '山',
+            'X' => '〤',
+            'Y' => 'Ꭹ',
             'Z' => 'ㄗ',
 
             // Lowercase letters (using variants from different Cybertronian styles)
-            'a' => 'ค', 'b' => '♭', 'c' => 'ᑢ', 'd' => 'ↁ', 'e' => '⋿',
-            'f' => 'ℱ', 'g' => 'Ꮆ', 'h' => 'Ђ', 'i' => '|', 'j' => 'ן',
-            'k' => 'к', 'l' => '↳', 'm' => '൩', 'n' => 'ภ', 'o' => '◯',
-            'p' => '℘', 'q' => 'զ', 'r' => 'г', 's' => '≠', 't' => 'ፐ',
-            'u' => '∪', 'v' => '∨', 'w' => 'พ', 'x' => '⊗', 'y' => 'у',
+            'a' => 'ค',
+            'b' => '♭',
+            'c' => 'ᑢ',
+            'd' => 'ↁ',
+            'e' => '⋿',
+            'f' => 'ℱ',
+            'g' => 'Ꮆ',
+            'h' => 'Ђ',
+            'i' => '|',
+            'j' => 'ן',
+            'k' => 'к',
+            'l' => '↳',
+            'm' => '൩',
+            'n' => 'ภ',
+            'o' => '◯',
+            'p' => '℘',
+            'q' => 'զ',
+            'r' => 'г',
+            's' => '≠',
+            't' => 'ፐ',
+            'u' => '∪',
+            'v' => '∨',
+            'w' => 'พ',
+            'x' => '⊗',
+            'y' => 'у',
             'z' => 'չ',
 
             // Numbers (from provided Cybertronian numerals)
-            '0' => '⦿', '1' => '|', '2' => 'ᒿ', '3' => '≡', '4' => '⫓',
-            '5' => '⫔', '6' => '⏀', '7' => '⫛', '8' => '∞', '9' => 'ⴤ',
+            '0' => '⦿',
+            '1' => '|',
+            '2' => 'ᒿ',
+            '3' => '≡',
+            '4' => '⫓',
+            '5' => '⫔',
+            '6' => '⏀',
+            '7' => '⫛',
+            '8' => '∞',
+            '9' => 'ⴤ',
 
             // Special characters (approximations for Cybertronian symbols)
-            '.' => '•', '(' => '⦑', ')' => '⦒', '_' => '⎼',
-            '!' => '⫝', '@' => '⊛', '#' => '⧇', '$' => '⧫', '%' => '⧮',
-            '^' => '△', '&' => '⊼', '*' => '⋆', '-' => '⎯', '+' => '⊕',
-            '=' => '⋕', '{' => '⦓', '}' => '⦔', '[' => '【', ']' => '】',
-            '|' => '┃', '\\' => '⧹', ':' => '∴', ';' => '⁏', '\'' => '´',
-            '"' => '‶', ',' => '⸴', '<' => '⫷', '>' => '⫸', '/' => '⧸',
-            '?' => '⸮', '`' => '῾', '~' => '∿',
+            '.' => '•',
+            '(' => '⦑',
+            ')' => '⦒',
+            '_' => '⎼',
+            '!' => '⫝',
+            '@' => '⊛',
+            '#' => '⧇',
+            '$' => '⧫',
+            '%' => '⧮',
+            '^' => '△',
+            '&' => '⊼',
+            '*' => '⋆',
+            '-' => '⎯',
+            '+' => '⊕',
+            '=' => '⋕',
+            '{' => '⦓',
+            '}' => '⦔',
+            '[' => '【',
+            ']' => '】',
+            '|' => '┃',
+            '\\' => '⧹',
+            ':' => '∴',
+            ';' => '⁏',
+            '\'' => '´',
+            '"' => '‶',
+            ',' => '⸴',
+            '<' => '⫷',
+            '>' => '⫸',
+            '/' => '⧸',
+            '?' => '⸮',
+            '`' => '῾',
+            '~' => '∿',
 
             // Default for any unmatched character
             _ => '⧠',
         }
     }
 
-    /// Selects a random Cybertronian-like symbol for visual noise
     fn map_random_symbol(rng: &mut impl Rng) -> char {
         // Pool of visually interesting symbols inspired by Cybertronian script
-        let cyber_random_chars = "⏃ᗷᑕᗞ⟊⎎Ꮆ⋔⟙⟗Ꮶ⅃⏁ᑎ〇℘Ϙ尺⟅ナ⋒٧山〤Ꭹㄗค♭ᑢↁ⋿ℱᎶЂ|ן⊗≠ፐ∪∨พу⊼⋕⦿|ᒿ≡⫓⫔⏀⫛∞ⴤ•⦑⦒⎼⊕⧠";
+        let cyber_random_chars =
+            "⏃ᗷᑕᗞ⟊⎎Ꮆ⋔⟙⟗Ꮶ⅃⏁ᑎ〇℘Ϙ尺⟅ナ⋒٧山〤Ꭹㄗค♭ᑢↁ⋿ℱᎶЂ|ן⊗≠ፐ∪∨พу⊼⋕⦿|ᒿ≡⫓⫔⏀⫛∞ⴤ•⦑⦒⎼⊕⧠";
         let index = rng.random_range(0..cyber_random_chars.len());
         cyber_random_chars.chars().nth(index).unwrap_or('⧠')
     }
 }
 
-// --- Component Implementation ---
-impl YewComponent for TypingAnimation {
-    fn render(&self) -> Html {
-        html! {
-            <div class="transformium-field" style={format!("background-color: {}; transform-style: preserve-3d;", self.color_scheme.borrow().background)}>
-                { self.render_connections() }
-                { self.render_particles() }
-            </div>
-        }
-    }
+impl Component for TypingAnimation {
+    type Message = Msg;
+    type Properties = ();
 
-    fn create_component() -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
         let target_text = ".unwrap()";
         let mut rng = rand::rng();
         const EXTRA_PARTICLES: usize = 80;
         let width = 300.0;
         let height = 150.0;
 
-        let particles = Self::initialize_particles(target_text, EXTRA_PARTICLES, width, height, &mut rng);
+        let particles =
+            Self::initialize_particles(target_text, EXTRA_PARTICLES, width, height, &mut rng);
         let connections = Self::initialize_connections(&particles, &mut rng);
 
         let color_scheme = ColorScheme {
@@ -168,37 +266,54 @@ impl YewComponent for TypingAnimation {
             background: "rgba(39, 40, 34, 0.0)".to_string(),
         };
 
+        let tick_timer = Rc::new(RefCell::new(None));
+        let phase_timer = Rc::new(RefCell::new(None));
+        let reset_timer = Rc::new(RefCell::new(None));
+
+        let gravity_interval = {
+            let link = ctx.link().clone();
+            Interval::new(2500, move || link.send_message(Msg::ShiftGravityCenter))
+        };
+
+        let color_interval = {
+            let link = ctx.link().clone();
+            Interval::new(4000, move || link.send_message(Msg::ChangeColorScheme))
+        };
+
+        let initial_tick = {
+            let link = ctx.link().clone();
+            Timeout::new(16, move || link.send_message(Msg::Tick))
+        };
+        *tick_timer.borrow_mut() = Some(initial_tick);
+
         TypingAnimation {
             particles: Rc::new(RefCell::new(particles)),
             connections: Rc::new(RefCell::new(connections)),
             target_text: target_text.to_string(),
-            phase: Rc::new(RefCell::new(AnimationPhase::Scatter(ScatterSubPhase::Initial))),
+            phase: Rc::new(RefCell::new(AnimationPhase::Scatter(
+                ScatterSubPhase::Initial,
+            ))),
             progress: Rc::new(RefCell::new(0.0)),
             is_complete: Rc::new(RefCell::new(false)),
             gravity_center: Rc::new(RefCell::new((width / 2.0, height / 2.0))),
             color_scheme: Rc::new(RefCell::new(color_scheme)),
             rng: Rc::new(RefCell::new(rng)),
-            width, height,
+            width,
+            height,
+            tick_timer,
+            phase_timer,
+            _gravity_interval: gravity_interval,
+            _color_interval: color_interval,
+            reset_timer,
         }
-    }
-}
-
-impl Component for TypingAnimation {
-    type Message = Msg;
-    type Properties = ();
-
-    fn create(ctx: &Context<Self>) -> Self {
-        let component = Self::create_component();
-        component.schedule_tick(ctx);
-        component.schedule_gravity_shift(ctx);
-        component.schedule_color_shift(ctx);
-        component
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Tick => {
-                if *self.is_complete.borrow() { return false; }
+                if *self.is_complete.borrow() {
+                    return false;
+                }
 
                 let phase = self.phase.borrow().clone();
                 let mut progress = self.progress.borrow_mut();
@@ -209,64 +324,128 @@ impl Component for TypingAnimation {
                 let mut connections_ref = self.connections.borrow_mut();
                 let mut rng = self.rng.borrow_mut();
 
-                self.update_connections(&mut connections_ref, &particles_ref, &phase, *progress, &mut rng);
+                self.update_connections(
+                    &mut connections_ref,
+                    &particles_ref,
+                    &phase,
+                    *progress,
+                    &mut rng,
+                );
 
                 match phase {
                     AnimationPhase::Scatter(sub_phase) => {
-                        self.update_scatter_phase(&mut particles_ref, sub_phase, *progress, gravity_center, &mut rng);
+                        self.update_scatter_phase(
+                            &mut particles_ref,
+                            sub_phase,
+                            *progress,
+                            gravity_center,
+                            &mut rng,
+                        );
                         let next_sub = match sub_phase {
-                            ScatterSubPhase::Initial if *progress > 0.6 => Some(ScatterSubPhase::Expansion),
-                            ScatterSubPhase::Expansion if *progress > 1.2 => Some(ScatterSubPhase::Contraction),
-                            ScatterSubPhase::Contraction if *progress > 1.8 => Some(ScatterSubPhase::PreConverge),
+                            ScatterSubPhase::Initial if *progress > 0.6 => {
+                                Some(ScatterSubPhase::Expansion)
+                            }
+                            ScatterSubPhase::Expansion if *progress > 1.2 => {
+                                Some(ScatterSubPhase::Contraction)
+                            }
+                            ScatterSubPhase::Contraction if *progress > 1.8 => {
+                                Some(ScatterSubPhase::PreConverge)
+                            }
                             ScatterSubPhase::PreConverge if *progress > 2.5 => None,
                             _ => None,
                         };
                         if let Some(next) = next_sub {
                             *self.phase.borrow_mut() = AnimationPhase::Scatter(next);
                             *progress = 0.0;
-                        } else if sub_phase == ScatterSubPhase::PreConverge && *progress > 2.5 {
+                        } else if sub_phase == ScatterSubPhase::PreConverge
+                            && *progress > 2.5
+                            && self.phase_timer.borrow().is_none()
+                        {
                             self.schedule_phase_advance(ctx);
                         }
                     }
                     AnimationPhase::Converge(sub_phase) => {
-                        self.update_converge_phase(&mut particles_ref, sub_phase, *progress, gravity_center, &mut rng);
+                        self.update_converge_phase(
+                            &mut particles_ref,
+                            sub_phase,
+                            *progress,
+                            gravity_center,
+                            &mut rng,
+                        );
                         let next_sub = match sub_phase {
-                            ConvergeSubPhase::Alignment if *progress > 0.5 => Some(ConvergeSubPhase::Formation),
-                            ConvergeSubPhase::Formation if *progress > 1.0 => Some(ConvergeSubPhase::Refinement),
-                            ConvergeSubPhase::Refinement if *progress > 1.5 => Some(ConvergeSubPhase::Solidification),
+                            ConvergeSubPhase::Alignment if *progress > 0.5 => {
+                                Some(ConvergeSubPhase::Formation)
+                            }
+                            ConvergeSubPhase::Formation if *progress > 1.0 => {
+                                Some(ConvergeSubPhase::Refinement)
+                            }
+                            ConvergeSubPhase::Refinement if *progress > 1.5 => {
+                                Some(ConvergeSubPhase::Solidification)
+                            }
                             ConvergeSubPhase::Solidification if *progress > 2.2 => None,
                             _ => None,
                         };
                         if let Some(next) = next_sub {
                             *self.phase.borrow_mut() = AnimationPhase::Converge(next);
                             *progress = 0.0;
-                        } else if sub_phase == ConvergeSubPhase::Solidification && *progress > 2.2 {
+                        } else if sub_phase == ConvergeSubPhase::Solidification
+                            && *progress > 2.2
+                            && self.phase_timer.borrow().is_none()
+                        {
                             self.schedule_phase_advance(ctx);
                         }
                     }
                     AnimationPhase::Stable(sub_phase) => {
-                        self.update_stable_phase(&mut particles_ref, sub_phase, *progress, gravity_center, &mut rng);
+                        self.update_stable_phase(
+                            &mut particles_ref,
+                            sub_phase,
+                            *progress,
+                            gravity_center,
+                            &mut rng,
+                        );
                         let next_sub = match sub_phase {
                             StableSubPhase::Pulse if *progress > 1.5 => Some(StableSubPhase::Orbit),
-                            StableSubPhase::Orbit if *progress > 2.5 => Some(StableSubPhase::Ripple),
-                            StableSubPhase::Ripple if *progress > 2.0 => Some(StableSubPhase::Shimmer),
-                            StableSubPhase::Shimmer if *progress > 2.5 => Some(StableSubPhase::PreDissolve),
+                            StableSubPhase::Orbit if *progress > 2.5 => {
+                                Some(StableSubPhase::Ripple)
+                            }
+                            StableSubPhase::Ripple if *progress > 2.0 => {
+                                Some(StableSubPhase::Shimmer)
+                            }
+                            StableSubPhase::Shimmer if *progress > 2.5 => {
+                                Some(StableSubPhase::PreDissolve)
+                            }
                             StableSubPhase::PreDissolve if *progress > 1.0 => None,
                             _ => None,
                         };
                         if let Some(next) = next_sub {
                             *self.phase.borrow_mut() = AnimationPhase::Stable(next);
                             *progress = 0.0;
-                        } else if sub_phase == StableSubPhase::PreDissolve && *progress > 1.0 {
+                        } else if sub_phase == StableSubPhase::PreDissolve
+                            && *progress > 1.0
+                            && self.phase_timer.borrow().is_none()
+                        {
                             self.schedule_phase_advance(ctx);
                         }
                     }
                     AnimationPhase::Dissolve(sub_phase) => {
-                        self.update_dissolve_phase(&mut particles_ref, &connections_ref, sub_phase, *progress, gravity_center, &mut rng);
+                        self.update_dissolve_phase(
+                            &mut particles_ref,
+                            &connections_ref,
+                            sub_phase,
+                            *progress,
+                            gravity_center,
+                            &mut rng,
+                        );
                         let next_sub = match sub_phase {
-                            DissolveSubPhase::Fracture if *progress > 0.8 => Some(DissolveSubPhase::Explosion),
-                            DissolveSubPhase::Explosion if *progress > 1.5 => Some(DissolveSubPhase::Dispersion),
-                            DissolveSubPhase::Dispersion if *progress > 2.5 => Some(DissolveSubPhase::Fade),
+                            DissolveSubPhase::Fracture if *progress > 0.8 => {
+                                Some(DissolveSubPhase::Explosion)
+                            }
+                            DissolveSubPhase::Explosion if *progress > 1.5 => {
+                                Some(DissolveSubPhase::Dispersion)
+                            }
+                            DissolveSubPhase::Dispersion if *progress > 2.5 => {
+                                Some(DissolveSubPhase::Fade)
+                            }
                             DissolveSubPhase::Fade if *progress > 3.5 => None,
                             _ => None,
                         };
@@ -275,7 +454,9 @@ impl Component for TypingAnimation {
                             *progress = 0.0;
                         } else if sub_phase == DissolveSubPhase::Fade && *progress > 3.5 {
                             *self.is_complete.borrow_mut() = true;
-                            self.schedule_reset(ctx);
+                            if self.reset_timer.borrow().is_none() {
+                                self.schedule_reset(ctx);
+                            }
                         }
                     }
                 }
@@ -290,13 +471,20 @@ impl Component for TypingAnimation {
                 true
             }
             Msg::AdvancePhase => {
+                *self.phase_timer.borrow_mut() = None; // Clear so next phase can schedule
                 let mut phase = self.phase.borrow_mut();
                 *self.progress.borrow_mut() = 0.0;
                 *phase = match *phase {
-                    AnimationPhase::Scatter(_) => AnimationPhase::Converge(ConvergeSubPhase::Alignment),
+                    AnimationPhase::Scatter(_) => {
+                        AnimationPhase::Converge(ConvergeSubPhase::Alignment)
+                    }
                     AnimationPhase::Converge(_) => AnimationPhase::Stable(StableSubPhase::Pulse),
-                    AnimationPhase::Stable(_) => AnimationPhase::Dissolve(DissolveSubPhase::Fracture),
-                    AnimationPhase::Dissolve(_) => AnimationPhase::Scatter(ScatterSubPhase::Initial),
+                    AnimationPhase::Stable(_) => {
+                        AnimationPhase::Dissolve(DissolveSubPhase::Fracture)
+                    }
+                    AnimationPhase::Dissolve(_) => {
+                        AnimationPhase::Scatter(ScatterSubPhase::Initial)
+                    }
                 };
                 true
             }
@@ -307,27 +495,22 @@ impl Component for TypingAnimation {
                     .clamp(self.width * 0.1, self.width * 0.9);
                 gravity_center.1 = (gravity_center.1 + rng.random_range(-20.0..20.0))
                     .clamp(self.height * 0.1, self.height * 0.9);
-                drop(rng);
-                self.schedule_gravity_shift(ctx);
                 true
             }
-            Msg::ChangeColorScheme => {
-                let mut color_scheme = self.color_scheme.borrow_mut();
-                let mut rng = self.rng.borrow_mut();
-                let hue_shift = rng.random_range(-15..15) as f32;
-                color_scheme.primary = Self::shift_color_hue(&color_scheme.primary, hue_shift);
-                color_scheme.secondary = Self::shift_color_hue(&color_scheme.secondary, hue_shift + 10.0);
-                drop(rng);
-                self.schedule_color_shift(ctx);
-                true
-            }
+            Msg::ChangeColorScheme => false,
             Msg::Reset => {
                 *self.phase.borrow_mut() = AnimationPhase::Scatter(ScatterSubPhase::Initial);
                 *self.progress.borrow_mut() = 0.0;
                 *self.is_complete.borrow_mut() = false;
 
                 let mut rng = self.rng.borrow_mut();
-                let particles = Self::initialize_particles(&self.target_text, 80, self.width, self.height, &mut rng);
+                let particles = Self::initialize_particles(
+                    &self.target_text,
+                    80,
+                    self.width,
+                    self.height,
+                    &mut rng,
+                );
                 let connections = Self::initialize_connections(&particles, &mut rng);
                 *self.particles.borrow_mut() = particles;
                 *self.connections.borrow_mut() = connections;
@@ -340,19 +523,22 @@ impl Component for TypingAnimation {
     }
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
-        self.render()
+        html! {
+            <div class="transformium-field" style={format!("background-color: {}; transform-style: preserve-3d;", self.color_scheme.borrow().background)}>
+                { self.render_connections() }
+                { self.render_particles() }
+            </div>
+        }
     }
 }
 
 impl TypingAnimation {
-    // --- Initialization Methods ---
-
     fn initialize_particles(
         target_text: &str,
         extra_particles: usize,
         width: f32,
         height: f32,
-        rng: &mut ThreadRng
+        rng: &mut ThreadRng,
     ) -> Vec<Particle> {
         let mut particles = Vec::new();
         let char_count = target_text.chars().count();
@@ -404,8 +590,8 @@ impl TypingAnimation {
             };
 
             particles.push(Particle {
-                x: rng.random_range(-width*0.1..width*1.1),
-                y: rng.random_range(-height*0.1..height*1.1),
+                x: rng.random_range(-width * 0.1..width * 1.1),
+                y: rng.random_range(-height * 0.1..height * 1.1),
                 z: rng.random_range(-60.0..60.0),
                 target_x: rng.random_range(text_start_x..text_start_x + text_width),
                 target_y: text_y + rng.random_range(-40.0..40.0),
@@ -455,7 +641,7 @@ impl TypingAnimation {
         for i in 0..core_indices.len().saturating_sub(2) {
             connections.push(Connection {
                 particle1_idx: core_indices[i],
-                particle2_idx: core_indices[i+2],
+                particle2_idx: core_indices[i + 2],
                 strength: 0.4,
                 opacity: 0.0,
                 active: false,
@@ -465,16 +651,9 @@ impl TypingAnimation {
         connections
     }
 
-    // Use the CybertronianMapper for random symbols
     fn random_char(rng: &mut impl Rng) -> char {
         CybertronianMapper::map_random_symbol(rng)
     }
-
-    fn shift_color_hue(hex_color: &str, _hue_shift: f32) -> String {
-        hex_color.to_string()
-    }
-
-    // --- Phase Update Methods ---
 
     fn update_connections(
         &self,
@@ -482,7 +661,7 @@ impl TypingAnimation {
         _particles: &[Particle],
         phase: &AnimationPhase,
         progress: f32,
-        _rng: &mut ThreadRng
+        _rng: &mut ThreadRng,
     ) {
         for conn in connections.iter_mut() {
             match phase {
@@ -496,7 +675,7 @@ impl TypingAnimation {
                         ConvergeSubPhase::Alignment => 0.1,
                         ConvergeSubPhase::Formation => 0.3,
                         ConvergeSubPhase::Refinement => 0.5,
-                        ConvergeSubPhase::Solidification => 0.6
+                        ConvergeSubPhase::Solidification => 0.6,
                     };
                     conn.opacity = (conn.opacity * 0.9 + target_opacity * 0.1).min(0.6);
                     conn.strength = (conn.strength * 0.95 + 1.0 * 0.05).min(1.0);
@@ -525,7 +704,7 @@ impl TypingAnimation {
         sub_phase: ScatterSubPhase,
         progress: f32,
         gravity_center: (f32, f32),
-        rng: &mut ThreadRng
+        rng: &mut ThreadRng,
     ) {
         let delta_time = 0.02;
 
@@ -641,10 +820,13 @@ impl TypingAnimation {
                     }
 
                     // Apply target velocities gradually
-                    let move_factor = (0.5 + progress * 0.5);
-                    p.vx = p.vx * (1.0 - move_factor * delta_time) + target_vx * move_factor * delta_time;
-                    p.vy = p.vy * (1.0 - move_factor * delta_time) + target_vy * move_factor * delta_time;
-                    p.vz = p.vz * (1.0 - move_factor * delta_time) + target_vz * move_factor * delta_time;
+                    let move_factor = 0.5 + progress * 0.5;
+                    p.vx = p.vx * (1.0 - move_factor * delta_time)
+                        + target_vx * move_factor * delta_time;
+                    p.vy = p.vy * (1.0 - move_factor * delta_time)
+                        + target_vy * move_factor * delta_time;
+                    p.vz = p.vz * (1.0 - move_factor * delta_time)
+                        + target_vz * move_factor * delta_time;
                 }
             }
 
@@ -668,7 +850,7 @@ impl TypingAnimation {
         sub_phase: ConvergeSubPhase,
         _progress: f32,
         gravity_center: (f32, f32),
-        rng: &mut ThreadRng
+        rng: &mut ThreadRng,
     ) {
         let delta_time = 0.02;
         let base_converge_speed = 0.1;
@@ -676,7 +858,7 @@ impl TypingAnimation {
             ConvergeSubPhase::Alignment => 0.6,
             ConvergeSubPhase::Formation => 1.0,
             ConvergeSubPhase::Refinement => 1.5,
-            ConvergeSubPhase::Solidification => 2.0
+            ConvergeSubPhase::Solidification => 2.0,
         };
         let converge_speed = base_converge_speed * speed_factor;
 
@@ -698,7 +880,7 @@ impl TypingAnimation {
                 let dx = p.target_x - p.x;
                 let dy = p.target_y - p.y;
                 let dz = p.target_z - p.z;
-                let dist = (dx*dx + dy*dy + dz*dz).sqrt().max(0.1);
+                let dist = (dx * dx + dy * dy + dz * dz).sqrt().max(0.1);
                 let force_factor = (dist / 10.0).clamp(0.5, 2.0) * converge_speed;
 
                 p.vx += dx * force_factor * delta_time;
@@ -706,7 +888,11 @@ impl TypingAnimation {
                 p.vz += dz * force_factor * delta_time;
 
                 // Start showing target Cybertronian symbol more consistently
-                if matches!(sub_phase, ConvergeSubPhase::Refinement | ConvergeSubPhase::Solidification) || rng.random_bool(0.3) {
+                if matches!(
+                    sub_phase,
+                    ConvergeSubPhase::Refinement | ConvergeSubPhase::Solidification
+                ) || rng.random_bool(0.3)
+                {
                     p.symbol = p.target_symbol;
                 } else if rng.random_bool(0.1) {
                     p.symbol = Self::random_char(rng);
@@ -717,14 +903,14 @@ impl TypingAnimation {
                     ConvergeSubPhase::Alignment => 0.4,
                     ConvergeSubPhase::Formation => 0.7,
                     ConvergeSubPhase::Refinement => 1.0,
-                    ConvergeSubPhase::Solidification => 1.1
+                    ConvergeSubPhase::Solidification => 1.1,
                 };
                 p.scale = p.scale * 0.85 + target_scale * 0.15;
 
                 // Adjust opacity based on phase
                 let target_opacity = match sub_phase {
                     ConvergeSubPhase::Solidification => 1.0,
-                    _ => 0.8
+                    _ => 0.8,
                 };
                 p.opacity = (p.opacity * 0.8 + target_opacity * 0.2).min(1.0);
 
@@ -802,7 +988,7 @@ impl TypingAnimation {
         sub_phase: StableSubPhase,
         _progress: f32,
         _gravity_center: (f32, f32),
-        rng: &mut ThreadRng
+        rng: &mut ThreadRng,
     ) {
         let delta_time = 0.02;
 
@@ -912,9 +1098,15 @@ impl TypingAnimation {
             } else {
                 // Non-text particles gradually fade
                 match p.particle_type {
-                    ParticleType::Orbiter => { p.opacity *= 0.99; }
-                    ParticleType::Swarm => { p.opacity *= 0.98; }
-                    _ => { p.opacity *= 0.97; }
+                    ParticleType::Orbiter => {
+                        p.opacity *= 0.99;
+                    }
+                    ParticleType::Swarm => {
+                        p.opacity *= 0.98;
+                    }
+                    _ => {
+                        p.opacity *= 0.97;
+                    }
                 }
 
                 // Occasional symbol randomization with Cybertronian symbols
@@ -939,7 +1131,7 @@ impl TypingAnimation {
         sub_phase: DissolveSubPhase,
         _progress: f32,
         _gravity_center: (f32, f32),
-        rng: &mut ThreadRng
+        rng: &mut ThreadRng,
     ) {
         let delta_time = 0.02;
 
@@ -948,7 +1140,7 @@ impl TypingAnimation {
             DissolveSubPhase::Fracture => 0.2,
             DissolveSubPhase::Explosion => 1.5,
             DissolveSubPhase::Dispersion => 0.8,
-            DissolveSubPhase::Fade => 0.3
+            DissolveSubPhase::Fade => 0.3,
         };
 
         // Set fade rate based on subphase
@@ -956,7 +1148,7 @@ impl TypingAnimation {
             DissolveSubPhase::Fracture => 0.99,
             DissolveSubPhase::Explosion => 0.97,
             DissolveSubPhase::Dispersion => 0.95,
-            DissolveSubPhase::Fade => 0.92
+            DissolveSubPhase::Fade => 0.92,
         };
 
         for p in particles.iter_mut() {
@@ -1015,39 +1207,23 @@ impl TypingAnimation {
         }
     }
 
-    // --- Timer Methods ---
-
     fn schedule_tick(&self, ctx: &Context<Self>) {
-        const TICK_DELAY_MS: u32 = 16;
         let link = ctx.link().clone();
-        Timeout::new(TICK_DELAY_MS, move || link.send_message(Msg::Tick)).forget();
+        let handle = Timeout::new(16, move || link.send_message(Msg::Tick));
+        *self.tick_timer.borrow_mut() = Some(handle);
     }
 
     fn schedule_phase_advance(&self, ctx: &Context<Self>) {
-        const PHASE_DELAY_MS: u32 = 30;
         let link = ctx.link().clone();
-        Timeout::new(PHASE_DELAY_MS, move || link.send_message(Msg::AdvancePhase)).forget();
-    }
-
-    fn schedule_gravity_shift(&self, ctx: &Context<Self>) {
-        const GRAVITY_SHIFT_DELAY_MS: u32 = 2500;
-        let link = ctx.link().clone();
-        Timeout::new(GRAVITY_SHIFT_DELAY_MS, move || link.send_message(Msg::ShiftGravityCenter)).forget();
-    }
-
-    fn schedule_color_shift(&self, ctx: &Context<Self>) {
-        const COLOR_SHIFT_DELAY_MS: u32 = 4000;
-        let link = ctx.link().clone();
-        Timeout::new(COLOR_SHIFT_DELAY_MS, move || link.send_message(Msg::ChangeColorScheme)).forget();
+        let handle = Timeout::new(30, move || link.send_message(Msg::AdvancePhase));
+        *self.phase_timer.borrow_mut() = Some(handle);
     }
 
     fn schedule_reset(&self, ctx: &Context<Self>) {
-        const RESET_DELAY_MS: u32 = 1500;
         let link = ctx.link().clone();
-        Timeout::new(RESET_DELAY_MS, move || link.send_message(Msg::Reset)).forget();
+        let handle = Timeout::new(1500, move || link.send_message(Msg::Reset));
+        *self.reset_timer.borrow_mut() = Some(handle);
     }
-
-    // --- Rendering Methods ---
 
     fn render_particles(&self) -> Html {
         let particles = self.particles.borrow();

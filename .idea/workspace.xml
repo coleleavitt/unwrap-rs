@@ -11,9 +11,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/index.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/error_boundary.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/error_boundary.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/social_links.rs" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/tailwind.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/tailwind.config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -84,6 +82,8 @@
       <workItem from="1744143563029" duration="384000" />
       <workItem from="1744143951710" duration="298000" />
       <workItem from="1744144260231" duration="21793000" />
+      <workItem from="1744310207647" duration="169000" />
+      <workItem from="1744310817322" duration="1570000" />
     </task>
     <servers />
   </component>
