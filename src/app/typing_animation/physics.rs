@@ -1,7 +1,7 @@
-use rand::rngs::ThreadRng;
 use rand::Rng;
+use rand::rngs::ThreadRng;
 
-use super::constants::{random_symbol, DELTA_TIME, HEIGHT, WIDTH};
+use super::constants::{DELTA_TIME, HEIGHT, WIDTH, random_symbol};
 use super::types::{
     AnimationPhase, Connection, ConvergeSubPhase, DissolveSubPhase, Particle, ParticleType,
     ScatterSubPhase, StableSubPhase,
@@ -22,12 +22,12 @@ pub fn update_connections(connections: &mut [Connection], phase: &AnimationPhase
                     ConvergeSubPhase::Refinement => 0.5,
                     ConvergeSubPhase::Solidification => 0.6,
                 };
-                conn.opacity = (conn.opacity * 0.9 + target_opacity * 0.1).min(0.6);
-                conn.strength = (conn.strength * 0.95 + 1.0 * 0.05).min(1.0);
+                conn.opacity = conn.opacity.mul_add(0.9, target_opacity * 0.1).min(0.6);
+                conn.strength = conn.strength.mul_add(0.95, 0.05).min(1.0);
             }
             AnimationPhase::Stable(_) => {
                 conn.active = true;
-                conn.opacity = 0.5 + (progress * 3.0).sin() * 0.1;
+                conn.opacity = (progress * 3.0).sin().mul_add(0.1, 0.5);
                 conn.strength = 1.0;
             }
             AnimationPhase::Dissolve(_) => {
@@ -50,17 +50,17 @@ pub fn update_scatter_phase(
 ) {
     for p in particles.iter_mut() {
         p.age += DELTA_TIME;
-        p.x += p.vx * DELTA_TIME * 60.0;
-        p.y += p.vy * DELTA_TIME * 60.0;
-        p.z += p.vz * DELTA_TIME * 60.0;
+        p.x = (p.vx * DELTA_TIME).mul_add(60.0, p.x);
+        p.y = (p.vy * DELTA_TIME).mul_add(60.0, p.y);
+        p.z = (p.vz * DELTA_TIME).mul_add(60.0, p.z);
         p.vx *= 0.96;
         p.vy *= 0.96;
         p.vz *= 0.96;
-        p.rotation = (p.rotation + p.vx * 2.0) % 360.0;
+        p.rotation = p.vx.mul_add(2.0, p.rotation) % 360.0;
 
         match sub_phase {
             ScatterSubPhase::Initial => {
-                p.opacity = (p.opacity + DELTA_TIME * 2.0).min(0.7);
+                p.opacity = DELTA_TIME.mul_add(2.0, p.opacity).min(0.7);
                 if rng.random_bool(0.06) {
                     p.vx += rng.random_range(-1.5..1.5);
                     p.vy += rng.random_range(-1.5..1.5);
@@ -71,24 +71,24 @@ pub fn update_scatter_phase(
                 }
             }
             ScatterSubPhase::Expansion => {
-                p.opacity = (p.opacity - DELTA_TIME * 0.5).max(0.1);
+                p.opacity = DELTA_TIME.mul_add(-0.5, p.opacity).max(0.1);
                 let dx = p.x - gravity_center.0;
                 let dy = p.y - gravity_center.1;
-                let dist_sq = (dx * dx + dy * dy).max(1.0);
+                let dist_sq = dy.mul_add(dy, dx * dx).max(1.0);
                 let force = 80.0 / dist_sq;
-                p.vx += dx * force * p.energy * DELTA_TIME;
-                p.vy += dy * force * p.energy * DELTA_TIME;
+                p.vx = (dx * force * p.energy).mul_add(DELTA_TIME, p.vx);
+                p.vy = (dy * force * p.energy).mul_add(DELTA_TIME, p.vy);
                 if rng.random_bool(0.1) {
                     p.symbol = random_symbol(rng);
                 }
             }
             ScatterSubPhase::Contraction => {
-                p.opacity = (p.opacity + DELTA_TIME * 1.0).min(0.8);
+                p.opacity = DELTA_TIME.mul_add(1.0, p.opacity).min(0.8);
                 let dx = gravity_center.0 - p.x;
                 let dy = gravity_center.1 - p.y;
-                let attraction = 0.1 + progress * 0.2;
-                p.vx += dx * attraction * p.energy * DELTA_TIME;
-                p.vy += dy * attraction * p.energy * DELTA_TIME;
+                let attraction = progress.mul_add(0.2, 0.1);
+                p.vx = (dx * attraction * p.energy).mul_add(DELTA_TIME, p.vx);
+                p.vy = (dy * attraction * p.energy).mul_add(DELTA_TIME, p.vy);
                 if p.is_text && rng.random_bool(0.03) {
                     p.symbol = p.target_symbol;
                 } else if rng.random_bool(0.12) {
@@ -104,12 +104,12 @@ pub fn update_scatter_phase(
                     let dx = p.target_x - p.x;
                     let dy = p.target_y - p.y;
                     let dz = p.target_z - p.z;
-                    target_vx += dx * 0.5;
-                    target_vy += dy * 0.5;
-                    target_vz += dz * 0.5;
+                    target_vx = dx.mul_add(0.5, target_vx);
+                    target_vy = dy.mul_add(0.5, target_vy);
+                    target_vz = dz.mul_add(0.5, target_vz);
                     p.rotation *= 0.85;
-                    p.scale = p.scale * 0.9 + 0.4 * 0.1;
-                    p.opacity = p.opacity * 0.9 + 0.6 * 0.1;
+                    p.scale = p.scale.mul_add(0.9, 0.04);
+                    p.opacity = p.opacity.mul_add(0.9, 0.06);
                     if rng.random_bool(0.15) {
                         p.symbol = p.target_symbol;
                     }
@@ -120,27 +120,27 @@ pub fn update_scatter_phase(
                     let dy_text = text_center_y - p.y;
                     let dx_grav = gravity_center.0 - p.x;
                     let dy_grav = gravity_center.1 - p.y;
-                    target_vx += (dx_text * 0.005 + dx_grav * 0.002) * 60.0 * DELTA_TIME;
-                    target_vy += (dy_text * 0.005 + dy_grav * 0.002) * 60.0 * DELTA_TIME;
-                    target_vz += (-p.z * 0.01) * 60.0 * DELTA_TIME;
-                    p.opacity = (p.opacity - DELTA_TIME * 0.8).max(0.05);
+                    target_vx = (dx_grav.mul_add(0.002, dx_text * 0.005) * 60.0)
+                        .mul_add(DELTA_TIME, target_vx);
+                    target_vy = (dy_grav.mul_add(0.002, dy_text * 0.005) * 60.0)
+                        .mul_add(DELTA_TIME, target_vy);
+                    target_vz = ((-p.z * 0.01) * 60.0).mul_add(DELTA_TIME, target_vz);
+                    p.opacity = DELTA_TIME.mul_add(-0.8, p.opacity).max(0.05);
                     if rng.random_bool(0.1) {
                         p.symbol = random_symbol(rng);
                     }
                 }
 
-                let move_factor = 0.5 + progress * 0.5;
-                p.vx =
-                    p.vx * (1.0 - move_factor * DELTA_TIME) + target_vx * move_factor * DELTA_TIME;
-                p.vy =
-                    p.vy * (1.0 - move_factor * DELTA_TIME) + target_vy * move_factor * DELTA_TIME;
-                p.vz =
-                    p.vz * (1.0 - move_factor * DELTA_TIME) + target_vz * move_factor * DELTA_TIME;
+                let move_factor = progress.mul_add(0.5, 0.5);
+                let blend = move_factor * DELTA_TIME;
+                p.vx = p.vx.mul_add(1.0 - blend, target_vx * blend);
+                p.vy = p.vy.mul_add(1.0 - blend, target_vy * blend);
+                p.vz = p.vz.mul_add(1.0 - blend, target_vz * blend);
             }
         }
 
         if !p.is_text && p.age > p.life {
-            p.opacity = (p.opacity - DELTA_TIME * 2.0).max(0.0);
+            p.opacity = DELTA_TIME.mul_add(-2.0, p.opacity).max(0.0);
         }
         p.vx = p.vx.clamp(-6.0, 6.0);
         p.vy = p.vy.clamp(-6.0, 6.0);
@@ -168,9 +168,9 @@ pub fn update_converge_phase(
 
     for p in particles.iter_mut() {
         p.age += DELTA_TIME;
-        p.x += p.vx * DELTA_TIME * 60.0;
-        p.y += p.vy * DELTA_TIME * 60.0;
-        p.z += p.vz * DELTA_TIME * 60.0;
+        p.x = (p.vx * DELTA_TIME).mul_add(60.0, p.x);
+        p.y = (p.vy * DELTA_TIME).mul_add(60.0, p.y);
+        p.z = (p.vz * DELTA_TIME).mul_add(60.0, p.z);
         p.vx *= 0.94;
         p.vy *= 0.94;
         p.vz *= 0.94;
@@ -179,11 +179,11 @@ pub fn update_converge_phase(
             let dx = p.target_x - p.x;
             let dy = p.target_y - p.y;
             let dz = p.target_z - p.z;
-            let dist = (dx * dx + dy * dy + dz * dz).sqrt().max(0.1);
+            let dist = dz.mul_add(dz, dy.mul_add(dy, dx * dx)).sqrt().max(0.1);
             let force_factor = (dist / 10.0).clamp(0.5, 2.0) * converge_speed;
-            p.vx += dx * force_factor * DELTA_TIME;
-            p.vy += dy * force_factor * DELTA_TIME;
-            p.vz += dz * force_factor * DELTA_TIME;
+            p.vx = (dx * force_factor).mul_add(DELTA_TIME, p.vx);
+            p.vy = (dy * force_factor).mul_add(DELTA_TIME, p.vy);
+            p.vz = (dz * force_factor).mul_add(DELTA_TIME, p.vz);
 
             if matches!(
                 sub_phase,
@@ -201,49 +201,49 @@ pub fn update_converge_phase(
                 ConvergeSubPhase::Refinement => 1.0,
                 ConvergeSubPhase::Solidification => 1.1,
             };
-            p.scale = p.scale * 0.85 + target_scale * 0.15;
+            p.scale = p.scale.mul_add(0.85, target_scale * 0.15);
             let target_opacity = if matches!(sub_phase, ConvergeSubPhase::Solidification) {
                 1.0
             } else {
                 0.8
             };
-            p.opacity = (p.opacity * 0.8 + target_opacity * 0.2).min(1.0);
+            p.opacity = p.opacity.mul_add(0.8, target_opacity * 0.2).min(1.0);
             p.rotation *= 0.7;
         } else {
             match p.particle_type {
                 ParticleType::Orbiter => {
                     let text_center_x = WIDTH / 2.0;
                     let text_center_y = HEIGHT * 0.6;
-                    let angle = p.age * (0.5 + p.energy * 0.3);
-                    let radius_base = 40.0 + (p.target_x % 30.0);
+                    let angle = p.energy.mul_add(0.3, 0.5) * p.age;
+                    let radius_base = (p.target_x % 30.0) + 40.0;
                     let radius_variation = (p.age * 0.8).sin() * 15.0 * p.energy;
                     let orbit_radius = radius_base + radius_variation;
-                    let target_x = text_center_x + angle.cos() * orbit_radius;
-                    let target_y = text_center_y + angle.sin() * orbit_radius * 0.7;
-                    p.vx += (target_x - p.x) * 0.05 * DELTA_TIME * 60.0;
-                    p.vy += (target_y - p.y) * 0.05 * DELTA_TIME * 60.0;
+                    let target_x = angle.cos().mul_add(orbit_radius, text_center_x);
+                    let target_y = angle.sin().mul_add(orbit_radius * 0.7, text_center_y);
+                    p.vx = ((target_x - p.x) * 0.05 * DELTA_TIME).mul_add(60.0, p.vx);
+                    p.vy = ((target_y - p.y) * 0.05 * DELTA_TIME).mul_add(60.0, p.vy);
                     p.vz *= 0.9;
                     p.opacity = (p.opacity * 0.97).clamp(0.0, 0.4);
                 }
                 ParticleType::Swarm => {
                     let dx_grav = gravity_center.0 - p.x;
                     let dy_grav = gravity_center.1 - p.y;
-                    p.vx += dx_grav * 0.008 * DELTA_TIME * 60.0;
-                    p.vy += dy_grav * 0.008 * DELTA_TIME * 60.0;
+                    p.vx = (dx_grav * 0.008 * DELTA_TIME).mul_add(60.0, p.vx);
+                    p.vy = (dy_grav * 0.008 * DELTA_TIME).mul_add(60.0, p.vy);
                     let turbulence_angle = p.age * p.energy * 1.5;
-                    p.vx += turbulence_angle.sin() * 0.2 * DELTA_TIME * 60.0;
-                    p.vy += turbulence_angle.cos() * 0.2 * DELTA_TIME * 60.0;
+                    p.vx = (turbulence_angle.sin() * 0.2 * DELTA_TIME).mul_add(60.0, p.vx);
+                    p.vy = (turbulence_angle.cos() * 0.2 * DELTA_TIME).mul_add(60.0, p.vy);
                     p.opacity = (p.opacity * 0.96).clamp(0.0, 0.3);
                 }
                 ParticleType::Fragment | ParticleType::Connector => {
                     if p.age < 0.5 {
-                        p.vx += rng.random_range(-1.0..1.0) * p.energy;
-                        p.vy += rng.random_range(-1.0..1.0) * p.energy;
-                        p.vz += rng.random_range(-0.5..0.5) * p.energy;
+                        p.vx = rng.random_range(-1.0_f32..1.0).mul_add(p.energy, p.vx);
+                        p.vy = rng.random_range(-1.0_f32..1.0).mul_add(p.energy, p.vy);
+                        p.vz = rng.random_range(-0.5_f32..0.5).mul_add(p.energy, p.vz);
                     }
-                    p.opacity = (p.opacity - DELTA_TIME * 3.0).max(0.0);
+                    p.opacity = DELTA_TIME.mul_add(-3.0, p.opacity).max(0.0);
                     p.scale *= 0.95;
-                    p.rotation += p.vx * 5.0;
+                    p.rotation = p.vx.mul_add(5.0, p.rotation);
                 }
                 ParticleType::Core => {}
             }
@@ -277,9 +277,9 @@ pub fn update_stable_phase(
         p.vx *= 0.85;
         p.vy *= 0.85;
         p.vz *= 0.85;
-        p.x += p.vx * DELTA_TIME * 60.0;
-        p.y += p.vy * DELTA_TIME * 60.0;
-        p.z += p.vz * DELTA_TIME * 60.0;
+        p.x = (p.vx * DELTA_TIME).mul_add(60.0, p.x);
+        p.y = (p.vy * DELTA_TIME).mul_add(60.0, p.y);
+        p.z = (p.vz * DELTA_TIME).mul_add(60.0, p.z);
 
         if p.is_text {
             p.symbol = p.target_symbol;
@@ -290,19 +290,19 @@ pub fn update_stable_phase(
 
             match sub_phase {
                 StableSubPhase::Pulse => {
-                    p.scale = 1.0 + (p.age * 8.0).sin() * 0.08;
-                    p.z = base_z + (p.age * 10.0).cos() * 1.0;
-                    p.x = base_x + (p.age * 2.0).sin() * 0.2;
-                    p.y = base_y + (p.age * 2.5).cos() * 0.2;
+                    p.scale = (p.age * 8.0).sin().mul_add(0.08, 1.0);
+                    p.z = (p.age * 10.0).cos().mul_add(1.0, base_z);
+                    p.x = (p.age * 2.0).sin().mul_add(0.2, base_x);
+                    p.y = (p.age * 2.5).cos().mul_add(0.2, base_y);
                 }
                 StableSubPhase::Orbit => {
                     let angle = p.age * 1.5;
                     let orbit_radius = 0.8;
-                    p.x = base_x + angle.sin() * orbit_radius;
-                    p.y = base_y + angle.cos() * orbit_radius;
-                    p.z = base_z + (angle * 2.0).sin() * 1.5;
+                    p.x = angle.sin().mul_add(orbit_radius, base_x);
+                    p.y = angle.cos().mul_add(orbit_radius, base_y);
+                    p.z = (angle * 2.0).sin().mul_add(1.5, base_z);
                     p.rotation = angle * 10.0;
-                    p.scale = 1.0 + (angle * 1.5).cos() * 0.05;
+                    p.scale = (angle * 1.5).cos().mul_add(0.05, 1.0);
                 }
                 StableSubPhase::Ripple => {
                     let particle_index = text_particle_targets
@@ -310,21 +310,21 @@ pub fn update_stable_phase(
                         .position(|(tx, _ty, ts)| *ts == p.target_symbol && *tx == p.target_x)
                         .unwrap_or(0);
                     let ripple_offset = particle_index as f32 * 0.5;
-                    let ripple_val = ((p.age * 6.0) - ripple_offset).sin();
-                    p.y = base_y + ripple_val * 2.0;
-                    p.z = base_z + ripple_val.abs() * 3.0;
-                    p.scale = 1.0 + ripple_val.abs() * 0.15;
+                    let ripple_val = p.age.mul_add(6.0, -ripple_offset).sin();
+                    p.y = ripple_val.mul_add(2.0, base_y);
+                    p.z = ripple_val.abs().mul_add(3.0, base_z);
+                    p.scale = ripple_val.abs().mul_add(0.15, 1.0);
                 }
                 StableSubPhase::Shimmer => {
-                    p.z = base_z + rng.random_range(-1.5..1.5);
-                    p.scale = 1.0 + rng.random_range(-0.03..0.03);
+                    p.z = rng.random_range(-1.5..1.5) + base_z;
+                    p.scale = rng.random_range(-0.03..0.03) + 1.0;
                     if rng.random_bool(0.05) {
                         p.symbol = random_symbol(rng);
                     } else {
                         p.symbol = p.target_symbol;
                     }
-                    p.x = base_x + rng.random_range(-0.2..0.2);
-                    p.y = base_y + rng.random_range(-0.2..0.2);
+                    p.x = rng.random_range(-0.2..0.2) + base_x;
+                    p.y = rng.random_range(-0.2..0.2) + base_y;
                 }
                 StableSubPhase::PreDissolve => {
                     if rng.random_bool(0.05) {
@@ -332,15 +332,15 @@ pub fn update_stable_phase(
                         p.vy += rng.random_range(-0.3..0.3);
                         p.vz += rng.random_range(-0.2..0.2);
                     }
-                    p.x = base_x + p.vx;
-                    p.y = base_y + p.vy;
-                    p.z = base_z + p.vz;
+                    p.x = p.vx + base_x;
+                    p.y = p.vy + base_y;
+                    p.z = p.vz + base_z;
                     if rng.random_bool(0.03) {
                         p.symbol = random_symbol(rng);
                     } else {
                         p.symbol = p.target_symbol;
                     }
-                    p.scale = 1.0 + rng.random_range(-0.05..0.05);
+                    p.scale = rng.random_range(-0.05..0.05) + 1.0;
                     p.opacity = 1.0 - rng.random_range(0.0..0.1);
                 }
             }
@@ -392,16 +392,17 @@ pub fn update_dissolve_phase(
         let origin_y = if p.is_text { p.target_y } else { p.y };
         let dx = p.x - origin_x;
         let dy = p.y - origin_y;
-        let dist_sq = (dx * dx + dy * dy).max(1.0);
+        let dist_sq = dy.mul_add(dy, dx * dx).max(1.0);
         let force = explosion_factor * 80.0 / dist_sq;
-        p.vx += dx * force * p.energy * rng.random_range(0.7..1.3) * DELTA_TIME;
-        p.vy += dy * force * p.energy * rng.random_range(0.7..1.3) * DELTA_TIME;
+        p.vx = (dx * force * p.energy * rng.random_range(0.7..1.3)).mul_add(DELTA_TIME, p.vx);
+        p.vy = (dy * force * p.energy * rng.random_range(0.7..1.3)).mul_add(DELTA_TIME, p.vy);
         if matches!(sub_phase, DissolveSubPhase::Explosion) {
-            p.vz += rng.random_range(-1.0..1.0) * explosion_factor * p.energy * DELTA_TIME;
+            p.vz = (rng.random_range(-1.0..1.0) * explosion_factor * p.energy)
+                .mul_add(DELTA_TIME, p.vz);
         }
-        p.x += p.vx * DELTA_TIME * 60.0;
-        p.y += p.vy * DELTA_TIME * 60.0;
-        p.z += p.vz * DELTA_TIME * 60.0;
+        p.x = (p.vx * DELTA_TIME).mul_add(60.0, p.x);
+        p.y = (p.vy * DELTA_TIME).mul_add(60.0, p.y);
+        p.z = (p.vz * DELTA_TIME).mul_add(60.0, p.z);
         p.vx *= 0.985;
         p.vy *= 0.985;
         p.vz *= 0.985;
@@ -409,7 +410,7 @@ pub fn update_dissolve_phase(
         if matches!(sub_phase, DissolveSubPhase::Fade) {
             p.scale *= 0.97f32.powf(DELTA_TIME * 60.0);
         }
-        p.rotation = (p.rotation + p.vx * 4.0) % 360.0;
+        p.rotation = p.vx.mul_add(4.0, p.rotation) % 360.0;
         if rng.random_bool(0.2) {
             p.symbol = random_symbol(rng);
         }

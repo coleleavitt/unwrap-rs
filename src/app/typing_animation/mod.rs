@@ -6,10 +6,10 @@ mod types;
 use leptos::prelude::*;
 use rand::Rng;
 use std::time::Duration;
-use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
+use wasm_bindgen::closure::Closure;
 
-use constants::{map_char, random_symbol, EXTRA_PARTICLES, HEIGHT, TARGET_TEXT, WIDTH};
+use constants::{EXTRA_PARTICLES, HEIGHT, TARGET_TEXT, WIDTH, map_char, random_symbol};
 use physics::{
     update_connections, update_converge_phase, update_dissolve_phase, update_scatter_phase,
     update_stable_phase,
@@ -30,7 +30,7 @@ fn initialize_particles() -> Vec<Particle> {
             x: rng.random_range(0.0..WIDTH),
             y: rng.random_range(0.0..HEIGHT),
             z: rng.random_range(-30.0..30.0),
-            target_x: text_start_x + (i as f32 * 20.0),
+            target_x: (i as f32).mul_add(20.0, text_start_x),
             target_y: text_y,
             target_z: 0.0,
             symbol: random_symbol(&mut rng),
@@ -167,17 +167,15 @@ pub fn TypingAnimation() -> impl IntoView {
                     phase_advancing.set(true);
                     if let Some(next) = current_phase.next() {
                         phase.set(next);
-                        progress.set(0.0);
-                        phase_advancing.set(false);
                     } else {
                         let new_particles = initialize_particles();
                         let new_connections = initialize_connections(&new_particles);
                         particles.set(new_particles);
                         connections.set(new_connections);
                         phase.set(AnimationPhase::initial());
-                        progress.set(0.0);
-                        phase_advancing.set(false);
                     }
+                    progress.set(0.0);
+                    phase_advancing.set(false);
                 }
             },
             Duration::from_millis(16),

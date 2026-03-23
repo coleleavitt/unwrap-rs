@@ -3,7 +3,7 @@ use super::types::{
 };
 
 impl AnimationPhase {
-    pub fn next(self) -> Option<Self> {
+    pub const fn next(self) -> Option<Self> {
         use AnimationPhase::*;
         use ConvergeSubPhase::*;
         use DissolveSubPhase::*;
@@ -34,7 +34,7 @@ impl AnimationPhase {
         }
     }
 
-    pub fn duration(&self) -> f32 {
+    pub const fn duration(&self) -> f32 {
         use AnimationPhase::*;
         use ConvergeSubPhase::*;
         use DissolveSubPhase::*;
@@ -65,7 +65,7 @@ impl AnimationPhase {
         }
     }
 
-    pub fn initial() -> Self {
+    pub const fn initial() -> Self {
         Self::Scatter(ScatterSubPhase::Initial)
     }
 }

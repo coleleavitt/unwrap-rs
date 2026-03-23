@@ -13,7 +13,7 @@ pub fn random_symbol(rng: &mut impl Rng) -> char {
     SYMBOL_CHARS.chars().nth(index).unwrap_or('⧠')
 }
 
-pub fn map_char(c: char) -> char {
+pub const fn map_char(c: char) -> char {
     match c {
         'A' => '⏃',
         'B' => 'ᗷ',
