@@ -4,7 +4,6 @@ pub const WIDTH: f32 = 300.0;
 pub const HEIGHT: f32 = 150.0;
 pub const EXTRA_PARTICLES: usize = 80;
 pub const TARGET_TEXT: &str = ".unwrap()";
-pub const DELTA_TIME: f32 = 0.02;
 
 const SYMBOL_CHARS: &str = "⏃ᗷᑕᗞ⟊⎎Ꮆ⋔⟙⟗Ꮶ⅃⏁ᑎ〇℘Ϙ尺⟅ナ⋒٧山〤Ꭹㄗค♭ᑢↁ⋿ℱᎶЂ|ן⊗≠ፐ∪∨พу⊼⋕⦿|ᒿ≡⫓⫔⏀⫛∞ⴤ•⦑⦒⎼⊕⧠";
 

@@ -5,6 +5,8 @@ mod types;
 
 use leptos::prelude::*;
 use rand::Rng;
+use std::cell::Cell;
+use std::rc::Rc;
 use std::time::Duration;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
@@ -15,6 +17,71 @@ use physics::{
     update_stable_phase,
 };
 use types::{AnimationPhase, ColorScheme, Connection, Particle, ParticleType, StableSubPhase};
+
+/// Minimal requestAnimationFrame loop with delta time computation.
+/// Returns handle for cancellation. Automatically cleans up on drop.
+fn request_animation_frame_loop<F>(mut callback: F) -> Rc<Cell<Option<i32>>>
+where
+    F: FnMut(f32) + 'static,
+{
+    let handle = Rc::new(Cell::new(None::<i32>));
+    let prev_timestamp = Rc::new(Cell::new(0.0_f64));
+
+    // Self-referential closure pattern via Rc<RefCell>
+    let closure_holder: Rc<std::cell::RefCell<Option<Closure<dyn FnMut(f64)>>>> =
+        Rc::new(std::cell::RefCell::new(None));
+
+    let closure_holder_clone = Rc::clone(&closure_holder);
+    let handle_clone = Rc::clone(&handle);
+    let prev_timestamp_clone = Rc::clone(&prev_timestamp);
+
+    let closure = Closure::wrap(Box::new(move |timestamp: f64| {
+        // Skip updates when tab is hidden (saves CPU/battery)
+        let is_visible = web_sys::window()
+            .and_then(|w| w.document())
+            .map(|d| d.visibility_state() == web_sys::VisibilityState::Visible)
+            .unwrap_or(true);
+
+        let prev = prev_timestamp_clone.get();
+
+        if is_visible {
+            // Reset timestamp after visibility change to avoid delta spike
+            let delta_ms = if prev > 0.0 { timestamp - prev } else { 16.0 };
+            let dt = (delta_ms / 1000.0).min(0.1) as f32; // Cap at 100ms to handle tab switches
+
+            // SpecialNonReactiveZone silences "reading signal outside reactive context" warnings
+            #[cfg(debug_assertions)]
+            let _zone = leptos::reactive::diagnostics::SpecialNonReactiveZone::enter();
+
+            callback(dt);
+        }
+
+        prev_timestamp_clone.set(if is_visible { timestamp } else { 0.0 });
+
+        if let Some(window) = web_sys::window() {
+            if let Some(ref closure) = *closure_holder_clone.borrow() {
+                if let Ok(id) = window.request_animation_frame(closure.as_ref().unchecked_ref()) {
+                    handle_clone.set(Some(id));
+                }
+            }
+        }
+    }) as Box<dyn FnMut(f64)>);
+
+    *closure_holder.borrow_mut() = Some(closure);
+
+    if let Some(window) = web_sys::window() {
+        if let Some(ref closure) = *closure_holder.borrow() {
+            if let Ok(id) = window.request_animation_frame(closure.as_ref().unchecked_ref()) {
+                handle.set(Some(id));
+            }
+        }
+    }
+
+    // Leak the closure to keep it alive (cleaned up via cancel_animation_frame)
+    std::mem::forget(closure_holder);
+
+    handle
+}
 
 fn initialize_particles() -> Vec<Particle> {
     let mut rng = rand::rng();
@@ -139,47 +206,47 @@ pub fn TypingAnimation() -> impl IntoView {
     let phase_advancing = RwSignal::new(false);
 
     Effect::new(move |_| {
-        set_interval(
-            move || {
-                let mut rng = rand::rng();
-                let current_phase = phase.get_untracked();
-                let current_progress = progress.get_untracked();
-                let grav = gravity_center.get_untracked();
+        let handle = request_animation_frame_loop(move |dt| {
+            let mut rng = rand::rng();
+            let current_phase = phase.get_untracked();
+            let current_progress = progress.get_untracked();
+            let grav = gravity_center.get_untracked();
 
-                progress.set(current_progress + 0.02);
+            progress.set(current_progress + dt);
 
-                particles.update(|ps| match &current_phase {
-                    AnimationPhase::Scatter(sub) => {
-                        update_scatter_phase(ps, *sub, current_progress, grav, &mut rng);
-                    }
-                    AnimationPhase::Converge(sub) => {
-                        update_converge_phase(ps, *sub, current_progress, grav, &mut rng);
-                    }
-                    AnimationPhase::Stable(sub) => {
-                        update_stable_phase(ps, *sub, current_progress, &mut rng);
-                    }
-                    AnimationPhase::Dissolve(sub) => update_dissolve_phase(ps, *sub, &mut rng),
-                });
-
-                connections.update(|cs| update_connections(cs, current_phase, current_progress));
-
-                if current_progress > current_phase.duration() && !phase_advancing.get_untracked() {
-                    phase_advancing.set(true);
-                    if let Some(next) = current_phase.next() {
-                        phase.set(next);
-                    } else {
-                        let new_particles = initialize_particles();
-                        let new_connections = initialize_connections(&new_particles);
-                        particles.set(new_particles);
-                        connections.set(new_connections);
-                        phase.set(AnimationPhase::initial());
-                    }
-                    progress.set(0.0);
-                    phase_advancing.set(false);
+            particles.update(|ps| match &current_phase {
+                AnimationPhase::Scatter(sub) => {
+                    update_scatter_phase(ps, *sub, current_progress, grav, &mut rng, dt);
                 }
-            },
-            Duration::from_millis(16),
-        );
+                AnimationPhase::Converge(sub) => {
+                    update_converge_phase(ps, *sub, current_progress, grav, &mut rng, dt);
+                }
+                AnimationPhase::Stable(sub) => {
+                    update_stable_phase(ps, *sub, current_progress, &mut rng, dt);
+                }
+                AnimationPhase::Dissolve(sub) => update_dissolve_phase(ps, *sub, &mut rng, dt),
+            });
+
+            connections.update(|cs| update_connections(cs, current_phase, current_progress));
+
+            if current_progress > current_phase.duration() && !phase_advancing.get_untracked() {
+                phase_advancing.set(true);
+                if let Some(next) = current_phase.next() {
+                    phase.set(next);
+                } else {
+                    let new_particles = initialize_particles();
+                    let new_connections = initialize_connections(&new_particles);
+                    particles.set(new_particles);
+                    connections.set(new_connections);
+                    phase.set(AnimationPhase::initial());
+                }
+                progress.set(0.0);
+                phase_advancing.set(false);
+            }
+        });
+
+        // Handle kept alive - animation runs for component lifetime
+        std::mem::forget(handle);
     });
 
     Effect::new(move |_| {
