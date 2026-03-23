@@ -142,9 +142,9 @@ pub fn TypingAnimation() -> impl IntoView {
         set_interval(
             move || {
                 let mut rng = rand::rng();
-                let current_phase = phase.get();
-                let current_progress = progress.get();
-                let grav = gravity_center.get();
+                let current_phase = phase.get_untracked();
+                let current_progress = progress.get_untracked();
+                let grav = gravity_center.get_untracked();
 
                 progress.set(current_progress + 0.02);
 
@@ -163,7 +163,7 @@ pub fn TypingAnimation() -> impl IntoView {
 
                 connections.update(|cs| update_connections(cs, current_phase, current_progress));
 
-                if current_progress > current_phase.duration() && !phase_advancing.get() {
+                if current_progress > current_phase.duration() && !phase_advancing.get_untracked() {
                     phase_advancing.set(true);
                     if let Some(next) = current_phase.next() {
                         phase.set(next);
