@@ -113,6 +113,12 @@ body {
     letter-spacing: -0.02em;
     /* Memory-safe hardware acceleration */
     transform: translateZ(0.01px);
+    transition: text-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.base-text:hover {
+    text-shadow: 0 0 15px rgba(102, 217, 239, 0.4);
+    transform: translateZ(0.05px) scale(1.02);
 }
 
 /* Fixed animation field placement */
@@ -143,6 +149,25 @@ body {
     transform: translateZ(0);
 }
 
+/* Visual cue that reveals functionality */
+.transformium-field::after {
+    content: "";
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: var(--jpl-accent-primary);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.4s ease-out;
+    opacity: 0.7;
+}
+
+.transformium-field:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}
 
 /* Particles container with radiation hardening */
 .transformium-particles {
@@ -275,14 +300,15 @@ body {
     font-family: 'JetBrains Mono', monospace;
     text-decoration: none;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
     padding: clamp(0.6rem, 2vw, 0.8rem) clamp(1rem, 3vw, 1.2rem);
     border-radius: 6px;
-    background: rgba(102, 217, 239, 0.08);
+    background: rgba(102, 217, 239, 0.12);
     letter-spacing: 0.02em;
-    border: 1px solid rgba(102, 217, 239, 0.15);
+    border: 1px solid rgba(102, 217, 239, 0.25);
     white-space: nowrap;
     backdrop-filter: blur(8px);
+    box-shadow: 0 0 10px rgba(102, 217, 239, 0.1);
 
     /* Touch target optimization for mobile */
     min-height: 44px;
@@ -293,14 +319,20 @@ body {
 .social-link-item:hover, .social-link-item.hovered {
     color: var(--jpl-accent-secondary);
     background: rgba(166, 226, 46, 0.1);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(166, 226, 46, 0.15);
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: 0 5px 15px rgba(166, 226, 46, 0.25);
     border-color: rgba(166, 226, 46, 0.3);
 }
 
 .social-link-item.disabled {
     opacity: 0.5;
     pointer-events: none;
+}
+
+/* Enhancement for keyboard navigation */
+.social-link-item:focus-visible {
+    box-shadow: 0 0 0 2px var(--jpl-accent-primary), 0 0 0 4px rgba(102, 217, 239, 0.3);
+    transform: translateY(-2px);
 }
 
 /* Icon container with guaranteed dimensions */
@@ -326,6 +358,105 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mission-critical data visualization effect */
+@keyframes data-transmission {
+    0% { opacity: 0.8; width: 0; }
+    50% { opacity: 1; width: 100%; }
+    51% { opacity: 0; }
+    100% { opacity: 0; }
+}
+
+/*.transformium-container::after {*/
+/*    content: "";*/
+/*    position: absolute;*/
+/*    bottom: -10px;*/
+/*    left: 0;*/
+/*    height: 1px;*/
+/*    background: linear-gradient(to right, transparent, var(--jpl-accent-primary), transparent);*/
+/*    opacity: 0;*/
+/*    animation: data-transmission 8s infinite;*/
+/*}*/
+
+/* Loading state indicator for dynamic content */
+@keyframes loading-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
+.loading::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+    rgba(102, 217, 239, 0.05) 25%,
+    rgba(102, 217, 239, 0.1) 50%,
+    rgba(102, 217, 239, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: loading-pulse 1.5s infinite linear;
+    pointer-events: none;
+}
+
+/* Advanced background with subtle grid effect */
+.radiation-hardened-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+            linear-gradient(rgba(23, 31, 46, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(23, 31, 46, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: center center;
+    z-index: -1;
+    opacity: 0.5;
+    transform: perspective(500px) rotateX(60deg) scale(2.5, 2.5) translateZ(-200px);
+    pointer-events: none;
+    animation: grid-fade 15s infinite alternate ease-in-out;
+}
+
+@keyframes grid-fade {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.5; }
+    100% { opacity: 0.3; }
+}
+
+/* Interactive particle system that follows cursor/touch */
+.interactive-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Radiation-hardened focus states */
+:focus {
+    outline: 2px solid var(--jpl-accent-primary);
+    outline-offset: 3px;
+}
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Orientation change animation */
+@media (orientation: portrait) {
+    .radiation-hardened-container {
+        transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+}
+
+@media (orientation: landscape) {
+    .radiation-hardened-container {
+        transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
 }
 
 /* Responsive adjustments with better positioning for social links */
@@ -410,7 +541,6 @@ body {
     }
 }
 
-
 /* iPhone/mobile portrait orientation fix */
 @media screen and (max-width: 480px) and (orientation: portrait) {
     .transformium-container {
@@ -438,6 +568,18 @@ body {
         /* move up a few ems */
         transform: translateY(-1.5em) translateZ(0);
     }
+
+    /* Optimize the grid effect for performance on mobile */
+    .radiation-hardened-container::before {
+        background-size: 30px 30px; /* Larger grid for better performance */
+        opacity: 0.3;
+        animation: none; /* Disable animation on mobile for performance */
+    }
+
+    /* Improve touch targets for mobile */
+    .social-link-item {
+        min-height: 48px; /* Slightly larger for better touch targets */
+    }
 }
 
 /* Additional fix for very narrow phones like iPhone SE */
@@ -452,5 +594,16 @@ body {
 
     .transformium-field {
         font-size: clamp(0.9rem, 3.5vw, 1.4rem);
+    }
+}
+
+/* Optimized night mode transitions */
+@media (prefers-color-scheme: dark) {
+    .radiation-hardened-container {
+        background: radial-gradient(ellipse at 50% 60%, #131b29 0%, #08090e 100%);
+    }
+
+    .social-link-item {
+        background: rgba(102, 217, 239, 0.06);
     }
 }

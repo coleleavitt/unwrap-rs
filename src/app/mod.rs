@@ -35,9 +35,10 @@ impl Component for MainContent {
             animation_state: Rc::new(RefCell::new(false)),
         }
     }
-
-    // Removed update method as there are no messages
-
+    fn update(&mut self, _ctx: &Context<Self>, _msg: Self::Message) -> bool {
+        // Update logic here
+        false
+    }
     fn view(&self, _ctx: &Context<Self>) -> Html {
         html! {
             <main class="radiation-hardened-container">

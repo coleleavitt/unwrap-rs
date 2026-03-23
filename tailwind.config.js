@@ -34,11 +34,14 @@ module.exports = {
                 'blink': 'blink 1.1s step-end infinite',
                 'glow': 'metallic-pulse 2.5s infinite ease-in-out',
                 'fade-in': 'fadeIn 0.6s ease-out forwards',
+                'data-pulse': 'data-transmission 8s infinite',
+                'grid-fade': 'grid-fade 15s infinite alternate ease-in-out',
             },
             // SEU-resistant box shadows
             boxShadow: {
                 'glow-cyan': '0 0 12px rgba(102, 217, 239, 0.4)',
                 'glow-green': '0 0 12px rgba(166, 226, 46, 0.4)',
+                'focus-ring': '0 0 0 2px #66d9ef, 0 0 0 4px rgba(102, 217, 239, 0.3)',
             },
             // Radiation-hardened transform utilities
             transformOrigin: {

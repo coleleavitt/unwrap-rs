@@ -34,6 +34,109 @@
     window.addEventListener('resize', setVH);
     window.addEventListener('orientationchange', setVH);
     document.addEventListener('DOMContentLoaded', setVH);
+
+    // Particle system that reacts to mouse/touch movement
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.querySelector('.radiation-hardened-container');
+      if (!container) return; // Exit early if container not found
+
+      // Create data points container
+      const dataPointsContainer = document.createElement('div');
+      dataPointsContainer.className = 'data-points';
+
+      // Find transformium container and append data points
+      const transformiumContainer = document.querySelector('.transformium-container');
+      if (transformiumContainer) {
+        transformiumContainer.appendChild(dataPointsContainer);
+      }
+
+      // Create interactive particles container
+      const particlesContainer = document.createElement('div');
+      particlesContainer.className = 'interactive-particles';
+      container.appendChild(particlesContainer);
+
+      // Create particles
+      for (let i = 0; i < 15; i++) {
+        createParticle(particlesContainer);
+      }
+
+      // Mouse/touch tracking
+      container.addEventListener('mousemove', handleMouseMove);
+      container.addEventListener('touchmove', handleTouchMove, { passive: true });
+
+      // Handle device orientation change
+      window.addEventListener('orientationchange', () => {
+        document.body.classList.add('orientation-changing');
+        setTimeout(() => {
+          document.body.classList.remove('orientation-changing');
+        }, 500);
+      });
+    });
+
+    function createParticle(container) {
+      const particle = document.createElement('div');
+      particle.className = 'particle text-particle';
+      particle.style.opacity = '0.2';
+      particle.style.color = 'var(--jpl-accent-primary)';
+      particle.style.fontSize = `${Math.random() * 10 + 6}px`;
+      particle.textContent = Math.random() > 0.5 ? '◉' : '◆';
+      container.appendChild(particle);
+
+      // Position randomly
+      resetParticle(particle);
+
+      return particle;
+    }
+
+    function resetParticle(particle) {
+      const x = Math.random() * 100;
+      const y = Math.random() * 100;
+      particle.style.left = `${x}%`;
+      particle.style.top = `${y}%`;
+      particle.style.transform = `translateZ(${Math.random() * 100}px)`;
+    }
+
+    function handleMouseMove(e) {
+      const particles = document.querySelectorAll('.interactive-particles .particle');
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      particles.forEach(particle => {
+        const rect = particle.getBoundingClientRect();
+        const particleX = rect.left + rect.width / 2;
+        const particleY = rect.top + rect.height / 2;
+
+        const distX = mouseX - particleX;
+        const distY = mouseY - particleY;
+        const distance = Math.sqrt(distX * distX + distY * distY);
+
+        if (distance < 100) {
+          const angle = Math.atan2(distY, distX);
+          const force = (100 - distance) / 10;
+
+          const moveX = Math.cos(angle) * force * -1;
+          const moveY = Math.sin(angle) * force * -1;
+
+          particle.style.transform = `translate(${moveX}px, ${moveY}px) translateZ(${Math.random() * 50}px)`;
+          particle.style.opacity = '0.8';
+          particle.style.transition = 'transform 0.2s cubic-bezier(0.165, 0.84, 0.44, 1)';
+        } else {
+          particle.style.transition = 'transform 1s ease-out, opacity 1s ease-out';
+          particle.style.transform = 'translate(0, 0) translateZ(0)';
+          particle.style.opacity = '0.2';
+        }
+      });
+    }
+
+    function handleTouchMove(e) {
+      const touch = e.touches[0];
+      if (touch) {
+        handleMouseMove({
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+      }
+    }
   </script>
 </head>
 <body>

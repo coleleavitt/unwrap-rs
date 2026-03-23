@@ -1,5 +1,5 @@
 [package]
-name = "unwrap_dot_rs"
+name = "unwrap-rs"
 version = "0.1.0"
 edition = "2021"
 
