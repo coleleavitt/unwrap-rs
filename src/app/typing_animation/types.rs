@@ -50,7 +50,7 @@ pub struct Particle {
     pub scale: f32,
     pub rotation: f32,
     pub is_text: bool,
-    pub particle_type: ParticleType,
+    pub kind: ParticleType,
     pub energy: f32,
     pub age: f32,
     pub life: f32,

@@ -34,7 +34,7 @@ impl AnimationPhase {
         }
     }
 
-    pub const fn duration(&self) -> f32 {
+    pub const fn duration(self) -> f32 {
         use AnimationPhase::*;
         use ConvergeSubPhase::*;
         use DissolveSubPhase::*;

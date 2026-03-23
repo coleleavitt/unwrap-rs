@@ -42,7 +42,7 @@ fn initialize_particles() -> Vec<Particle> {
             scale: rng.random_range(0.2..0.8),
             rotation: rng.random_range(0.0..360.0),
             is_text: true,
-            particle_type: ParticleType::Core,
+            kind: ParticleType::Core,
             energy: rng.random_range(0.8..1.2),
             age: 0.0,
             life: rng.random_range(5.0..10.0),
@@ -77,7 +77,7 @@ fn initialize_particles() -> Vec<Particle> {
             scale: rng.random_range(0.3..0.9),
             rotation: rng.random_range(0.0..360.0),
             is_text: false,
-            particle_type,
+            kind: particle_type,
             energy: rng.random_range(0.5..1.5),
             age: 0.0,
             life,
@@ -150,18 +150,18 @@ pub fn TypingAnimation() -> impl IntoView {
 
                 particles.update(|ps| match &current_phase {
                     AnimationPhase::Scatter(sub) => {
-                        update_scatter_phase(ps, *sub, current_progress, grav, &mut rng)
+                        update_scatter_phase(ps, *sub, current_progress, grav, &mut rng);
                     }
                     AnimationPhase::Converge(sub) => {
-                        update_converge_phase(ps, *sub, current_progress, grav, &mut rng)
+                        update_converge_phase(ps, *sub, current_progress, grav, &mut rng);
                     }
                     AnimationPhase::Stable(sub) => {
-                        update_stable_phase(ps, *sub, current_progress, &mut rng)
+                        update_stable_phase(ps, *sub, current_progress, &mut rng);
                     }
                     AnimationPhase::Dissolve(sub) => update_dissolve_phase(ps, *sub, &mut rng),
                 });
 
-                connections.update(|cs| update_connections(cs, &current_phase, current_progress));
+                connections.update(|cs| update_connections(cs, current_phase, current_progress));
 
                 if current_progress > current_phase.duration() && !phase_advancing.get() {
                     phase_advancing.set(true);
@@ -226,7 +226,7 @@ pub fn TypingAnimation() -> impl IntoView {
                             .filter(|p| p.opacity > 0.01)
                             .map(|p| {
                                 let z_index = ((p.z + 100.0).clamp(0.0, 200.0) / 2.0).round() as i32;
-                                let color = match (p.is_text, &p.particle_type, &current_phase) {
+                                let color = match (p.is_text, &p.kind, &current_phase) {
                                     (true, _, AnimationPhase::Stable(StableSubPhase::Ripple | StableSubPhase::Shimmer)) => scheme.accent,
                                     (true, _, _) => scheme.primary,
                                     (false, ParticleType::Orbiter, _) => scheme.accent,

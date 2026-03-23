@@ -7,7 +7,7 @@ use super::types::{
     ScatterSubPhase, StableSubPhase,
 };
 
-pub fn update_connections(connections: &mut [Connection], phase: &AnimationPhase, progress: f32) {
+pub fn update_connections(connections: &mut [Connection], phase: AnimationPhase, progress: f32) {
     for conn in connections.iter_mut() {
         match phase {
             AnimationPhase::Scatter(_) => {
@@ -210,7 +210,7 @@ pub fn update_converge_phase(
             p.opacity = p.opacity.mul_add(0.8, target_opacity * 0.2).min(1.0);
             p.rotation *= 0.7;
         } else {
-            match p.particle_type {
+            match p.kind {
                 ParticleType::Orbiter => {
                     let text_center_x = WIDTH / 2.0;
                     let text_center_y = HEIGHT * 0.6;
@@ -305,6 +305,7 @@ pub fn update_stable_phase(
                     p.scale = (angle * 1.5).cos().mul_add(0.05, 1.0);
                 }
                 StableSubPhase::Ripple => {
+                    #[allow(clippy::float_cmp)]
                     let particle_index = text_particle_targets
                         .iter()
                         .position(|(tx, _ty, ts)| *ts == p.target_symbol && *tx == p.target_x)
@@ -350,7 +351,7 @@ pub fn update_stable_phase(
             p.z = p.z.clamp(base_z - 5.0, base_z + 5.0);
             p.scale = p.scale.clamp(0.8, 1.2);
         } else {
-            match p.particle_type {
+            match p.kind {
                 ParticleType::Orbiter => p.opacity *= 0.99,
                 ParticleType::Swarm => p.opacity *= 0.98,
                 _ => p.opacity *= 0.97,
