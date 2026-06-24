@@ -1,5 +1,4 @@
-use rand::Rng;
-use rand::rngs::ThreadRng;
+use rand::{RngExt, rngs::ThreadRng};
 
 use super::constants::{HEIGHT, WIDTH, random_symbol};
 use super::types::{

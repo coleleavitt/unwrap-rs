@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 pub const WIDTH: f32 = 300.0;
 pub const HEIGHT: f32 = 150.0;

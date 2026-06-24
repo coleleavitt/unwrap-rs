@@ -4,7 +4,7 @@ mod state_machine;
 mod types;
 
 use leptos::prelude::*;
-use rand::Rng;
+use rand::RngExt;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::time::Duration;
