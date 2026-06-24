@@ -1,36 +1,21 @@
-[package]
-name = "unwrap-rs"
-version = "0.1.0"
+[workspace]
+resolver = "2"
+members = ["frontend", "server"]
+# `cargo build`/`cargo test` at the root touch only the native server.
+# The frontend is a wasm32 crate driven by Trunk (see frontend/Trunk.toml);
+# building it for the host target fails on purpose (getrandom wasm_js backend).
+default-members = ["server"]
+
+[workspace.package]
 edition = "2024"
-rust-version = "1.85"
-description = "Personal website at unwrap.rs - Leptos + WASM + Tailwind"
-repository = "https://github.com/coleleavitt/unwrap-rs"
 license = "MIT OR Apache-2.0"
 authors = ["Cole Leavitt <coleleavitt@protonmail.com>"]
-keywords = ["wasm", "leptos", "website", "animation", "webassembly"]
-categories = ["wasm", "web-programming"]
+repository = "https://github.com/coleleavitt/unwrap-rs"
 
-[dependencies]
-leptos = { version = "0.7", features = ["csr"] }
-rand = "0.9.0"
-getrandom = { version = "0.3.2", features = ["wasm_js"] }
-wasm-bindgen = "0.2"
-web-sys = { version = "0.3", features = ["Window", "Document", "VisibilityState"] }
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3"
-
-[profile.release]
-lto = true
-codegen-units = 1
-panic = "abort"
-opt-level = "z"
-strip = true
-
-[lints.rust]
+[workspace.lints.rust]
 unsafe_code = "warn"
 
-[lints.clippy]
+[workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
@@ -50,5 +35,12 @@ wildcard_imports = "allow"
 enum_glob_use = "allow"
 # Module inception (mod.rs with same name) is fine
 module_name_repetitions = "allow"
-# Component functions are necessarily large
+# Component / handler functions are necessarily large
 too_many_lines = "allow"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = "z"
+strip = true

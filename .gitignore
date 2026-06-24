@@ -1,6 +1,8 @@
 /dist/
+/frontend/dist/
 /target/
 .idea/
 .vscode/
+.jfc/
 *.swp
 *.swo

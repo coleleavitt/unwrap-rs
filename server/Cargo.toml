@@ -1,0 +1,20 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition.workspace = true
+rust-version = "1.85"
+description = "servant-rs backend for unwrap.rs: typed API + static frontend hosting"
+repository.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+servant = { path = "../../servant-rs/servant" }
+servant-server = { path = "../../servant-rs/servant-server" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "fs"] }
+http = "1"
+bytes = "1"
+serde = { version = "1", features = ["derive"] }
+
+[lints]
+workspace = true
