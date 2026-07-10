@@ -81,16 +81,16 @@ body {
     will-change: transform;
 }
 
-/* Professional identity remains visible without competing with the Rust motif. */
+/* A concise identity statement lets the Rust motif carry the technical detail. */
 .identity-lockup {
     position: relative;
     z-index: 20;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: clamp(0.3rem, 1vh, 0.55rem);
+    gap: clamp(0.5rem, 1vh, 0.625rem);
     max-width: min(90vw, 52rem);
-    margin-bottom: clamp(1.4rem, 4vh, 2.5rem);
+    margin-bottom: clamp(1.25rem, 3vh, 1.75rem);
     text-align: center;
 }
 
@@ -105,25 +105,20 @@ body {
     text-shadow: 0 0 12px rgba(102, 217, 239, 0.2);
 }
 
-.identity-role,
-.identity-focus {
+.identity-statement {
     margin: 0;
+    max-width: 44ch;
+    color: rgba(248, 250, 252, 0.78);
+    font-size: clamp(0.875rem, 1.8vw, 1rem);
+    font-weight: 400;
+    line-height: 1.55;
+    letter-spacing: 0.005em;
     text-wrap: balance;
 }
 
-.identity-role {
+.identity-accent {
     color: var(--jpl-accent-primary);
-    font-size: clamp(0.8rem, 2vw, 1rem);
     font-weight: 500;
-    line-height: 1.4;
-    letter-spacing: 0.01em;
-}
-
-.identity-focus {
-    color: rgba(248, 250, 252, 0.72);
-    font-size: clamp(0.68rem, 1.6vw, 0.82rem);
-    line-height: 1.45;
-    letter-spacing: 0.02em;
 }
 
 /* Animation container with better alignment */
@@ -140,7 +135,6 @@ body {
     /* Radiation-hardened rendering */
     transform: translateZ(0);
     will-change: transform;
-    left: -3em;
     backface-visibility: hidden;
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
@@ -172,9 +166,10 @@ body {
     position: relative;
     transform-style: preserve-3d;
     -webkit-transform-style: preserve-3d;
-    width: auto;
-    min-width: auto;
-    max-width: none;
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+    flex: 0 0 300px;
     height: clamp(55px, 15vw, 92.5px);
     font-weight: 600;
     font-size: clamp(1.8rem, 6vw, 2.5rem);
@@ -520,10 +515,6 @@ body {
         transform: scale(0.9);
     }
 
-    .transformium-field {
-        margin-left: -0.2em;
-    }
-
     /* Ensure social links are visible on tablets */
     .social-links {
         bottom: max(env(safe-area-inset-bottom), 1.5rem);
@@ -566,7 +557,7 @@ body {
 
     .identity-lockup {
         max-width: 92vw;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
     }
 
     .social-link-item {
@@ -580,6 +571,7 @@ body {
         margin-bottom: 6rem; /* Add more space for social links */
         width: 100%; /* Full width container */
         justify-content: center; /* Center the content */
+        left: 0;
     }
 
     /* Make social links fixed position on mobile */
@@ -596,12 +588,10 @@ body {
 @media screen and (max-width: 480px) and (orientation: portrait) {
     .transformium-container {
         transform: scale(0.85);
-        width: 100vw; /* Change from 90vw to 100vw for full width */
+        width: 100%;
         flex-wrap: nowrap;
         justify-content: center;
         overflow-x: visible; /* Ensure text isn't clipped */
-        padding: 0 1rem; /* Add horizontal padding */
-        left: -2.5em; /* Adjust left position */
     }
 
     .base-text {
@@ -613,8 +603,6 @@ body {
         font-size: clamp(1rem, 4vw, 1.6rem); /* Match base text size */
         margin-left: 0; /* Remove negative margin */
         white-space: nowrap;
-        min-width: auto; /* Allow dynamic width */
-        left: -3.0em; /* Adjust left position */
         transform: translateZ(0); /* Ensure GPU acceleration */
         /* move up a few ems */
         transform: translateY(-1.5em) translateZ(0);

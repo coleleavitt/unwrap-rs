@@ -12,8 +12,11 @@ pub fn MainContent() -> impl IntoView {
         <main class="radiation-hardened-container" aria-labelledby="portfolio-title">
             <header class="identity-lockup">
                 <h1 id="portfolio-title" class="identity-name">"Cole Leavitt"</h1>
-                <p class="identity-role">"Principal Security Engineer · Security Researcher"</p>
-                <p class="identity-focus">"Rust · Systems Security · Vulnerability Research"</p>
+                <p class="identity-statement">
+                    "I build and break systems software in "
+                    <span class="identity-accent">"Rust"</span>
+                    "."
+                </p>
             </header>
             <div class="transformium-container" aria-label="Result of T, E dot unwrap">
                 <span class="base-text" aria-hidden="true">"Result<T, E>"</span>
