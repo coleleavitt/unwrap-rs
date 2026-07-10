@@ -3,10 +3,15 @@ name = "server"
 version = "0.1.0"
 edition.workspace = true
 rust-version = "1.85"
-description = "servant-rs backend for unwrap.rs: typed API + static frontend hosting"
+description = "Production server for the unwrap.rs security research portfolio"
 repository.workspace = true
+homepage.workspace = true
 license.workspace = true
 authors.workspace = true
+readme = "../README.md"
+publish = false
+keywords = ["rust", "http", "web-server", "portfolio", "servant"]
+categories = ["web-programming::http-server"]
 
 [dependencies]
 servant = { path = "../../servant-rs/servant" }

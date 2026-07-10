@@ -6,3 +6,6 @@
 .jfc/
 *.swp
 *.swo
+.codegraph/
+.playwright-mcp/
+.impeccable/

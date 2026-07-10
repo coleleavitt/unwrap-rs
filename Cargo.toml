@@ -9,8 +9,9 @@ default-members = ["server"]
 [workspace.package]
 edition = "2024"
 license = "MIT OR Apache-2.0"
-authors = ["Cole Leavitt <coleleavitt@protonmail.com>"]
+authors = ["Cole Leavitt <cole@unwrap.rs>"]
 repository = "https://github.com/coleleavitt/unwrap-rs"
+homepage = "https://unwrap.rs"
 
 [workspace.lints.rust]
 unsafe_code = "warn"

@@ -2,12 +2,15 @@
 name = "unwrap-rs"
 version = "0.1.0"
 edition.workspace = true
-rust-version = "1.85"
-description = "Personal website at unwrap.rs - Leptos + WASM + Tailwind"
+rust-version = "1.88"
+description = "Security engineering and research portfolio for Cole Leavitt"
 repository.workspace = true
+homepage.workspace = true
 license.workspace = true
 authors.workspace = true
-keywords = ["wasm", "leptos", "website", "animation", "webassembly"]
+readme = "../README.md"
+publish = false
+keywords = ["security", "rust", "leptos", "webassembly", "portfolio"]
 categories = ["wasm", "web-programming"]
 
 [dependencies]

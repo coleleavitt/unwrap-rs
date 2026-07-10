@@ -1,10 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns# profile: https://ogp.me/ns/profile#">
 <head>
   <meta charset="utf-8" />
-  <title>Unwrap.rs - JPL Safety-Critical Demo</title>
+  <title>Cole Leavitt — Principal Security Engineer</title>
+  <meta name="description" content="Cole Leavitt is a principal security engineer and security researcher focused on Rust, systems security, and vulnerability research." />
+  <meta name="author" content="Cole Leavitt" />
+  <meta name="robots" content="max-image-preview:large" />
+  <link rel="canonical" href="https://unwrap.rs/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <meta property="og:type" content="profile" />
+  <meta property="og:title" content="Cole Leavitt — Principal Security Engineer" />
+  <meta property="og:description" content="Principal security engineer and security researcher focused on Rust, systems security, and vulnerability research." />
+  <meta property="og:url" content="https://unwrap.rs/" />
+  <meta property="og:site_name" content="Cole Leavitt" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:image" content="https://unwrap.rs/social-card.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Cole Leavitt — Principal Security Engineer and Security Researcher" />
+  <meta property="profile:first_name" content="Cole" />
+  <meta property="profile:last_name" content="Leavitt" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Cole Leavitt — Principal Security Engineer" />
+  <meta name="twitter:description" content="Principal security engineer and security researcher focused on Rust, systems security, and vulnerability research." />
+  <meta name="twitter:image" content="https://unwrap.rs/social-card.png" />
+  <meta name="twitter:image:alt" content="Cole Leavitt — Principal Security Engineer and Security Researcher" />
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://unwrap.rs/#website",
+          "url": "https://unwrap.rs/",
+          "name": "Cole Leavitt",
+          "alternateName": "unwrap.rs"
+        },
+        {
+          "@type": "ProfilePage",
+          "@id": "https://unwrap.rs/#profile",
+          "url": "https://unwrap.rs/",
+          "name": "Cole Leavitt — Principal Security Engineer",
+          "isPartOf": { "@id": "https://unwrap.rs/#website" },
+          "mainEntity": {
+            "@type": "Person",
+            "@id": "https://unwrap.rs/#cole-leavitt",
+            "name": "Cole Leavitt",
+            "url": "https://unwrap.rs/",
+            "jobTitle": "Principal Security Engineer",
+            "description": "Principal security engineer and security researcher focused on Rust, systems security, and vulnerability research.",
+            "sameAs": [
+              "https://github.com/coleleavitt",
+              "https://www.linkedin.com/in/coleleavitt/"
+            ]
+          }
+        }
+      ]
+    }
+  </script>
+
   <link data-trunk rel="tailwind-css" href="index.css" />
   <link data-trunk rel="copy-dir" href="src/app/social_links/icons"/>
+  <link data-trunk rel="copy-file" href="favicon.svg" />
+  <link data-trunk rel="copy-file" href="social-card.png" />
+  <link data-trunk rel="copy-file" href="robots.txt" />
+  <link data-trunk rel="copy-file" href="sitemap.xml" />
 
   <!-- JPL-Certified Font Stack -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +76,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
   <!-- Radiation-hardened viewport settings - improved for iOS -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0a0e14">
 
   <!-- iOS-specific safety protocols -->

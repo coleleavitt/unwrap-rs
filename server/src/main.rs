@@ -4,7 +4,7 @@
 //! - `GET /api/health`        — a `PlainText` liveness probe,
 //! - `GET /api/social-links`  — the social links as `JSON`,
 //! - everything else          — a `Raw` catch-all that serves the Trunk-built
-//!   frontend from `dist/` with an SPA fallback to `index.html`.
+//!   frontend from `dist/` and returns a real 404 for missing files.
 //!
 //! The same description is consumed by `servant_server::serve`, so routing and
 //! the handler shapes cannot drift apart.
@@ -74,6 +74,7 @@ fn content_type_for(name: &str) -> &'static str {
         Some("wasm") => "application/wasm",
         Some("svg") => "image/svg+xml",
         Some("json") => "application/json",
+        Some("xml") => "application/xml; charset=utf-8",
         Some("png") => "image/png",
         Some("jpg" | "jpeg") => "image/jpeg",
         Some("ico") => "image/x-icon",
@@ -106,7 +107,7 @@ fn not_found() -> Response<ResponseBody> {
     )
 }
 
-/// `Raw` catch-all: serve a file from `dist/`, falling back to `index.html`.
+/// `Raw` catch-all: serve a file from `dist/` or return a real 404.
 async fn serve_static(req: RawRequest, dist: Arc<PathBuf>) -> Response<ResponseBody> {
     let tail = req.tail();
 
@@ -128,14 +129,10 @@ async fn serve_static(req: RawRequest, dist: Arc<PathBuf>) -> Response<ResponseB
     }
 
     let name = tail.last().map_or("index.html", String::as_str);
-    match tokio::fs::read(&path).await {
-        Ok(bytes) => respond(StatusCode::OK, content_type_for(name), bytes),
-        // SPA fallback: unknown paths render the app shell.
-        Err(_) => match tokio::fs::read(dist.join("index.html")).await {
-            Ok(bytes) => respond(StatusCode::OK, "text/html; charset=utf-8", bytes),
-            Err(_) => not_found(),
-        },
-    }
+    tokio::fs::read(&path).await.map_or_else(
+        |_| not_found(),
+        |bytes| respond(StatusCode::OK, content_type_for(name), bytes),
+    )
 }
 
 #[tokio::main]

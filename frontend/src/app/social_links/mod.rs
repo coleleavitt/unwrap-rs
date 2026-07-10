@@ -30,7 +30,7 @@ pub fn SocialLinks() -> impl IntoView {
     let hover_index = RwSignal::new(None::<usize>);
 
     view! {
-        <section class="social-links">
+        <section class="social-links" aria-label="Connect with Cole Leavitt">
             <div class="social-links-container">
                 {SOCIAL_LINKS
                     .iter()

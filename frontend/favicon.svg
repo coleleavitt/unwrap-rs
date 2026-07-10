@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">unwrap.rs</title>
+  <rect width="64" height="64" rx="14" fill="#0a0e14"/>
+  <path d="M17 17v17c0 9 5 14 15 14s15-5 15-14V17" fill="none" stroke="#66d9ef" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="50" cy="49" r="4" fill="#a6e22e"/>
+</svg>

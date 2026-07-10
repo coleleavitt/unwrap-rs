@@ -1,0 +1,26 @@
+[Unit]
+Description=unwrap.rs Rust web service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/unwrap-rs/current
+Environment=ADDR=127.0.0.1:18080
+Environment=DIST_DIR=/opt/unwrap-rs/current/dist
+ExecStart=/opt/unwrap-rs/current/bin/server
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadOnlyPaths=/opt/unwrap-rs
+CapabilityBoundingSet=
+LockPersonality=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
