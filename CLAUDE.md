@@ -41,7 +41,7 @@ Composition rules:
 - The homepage is static HTML; only the animation is Leptos 0.8 CSR (`wasm32-unknown-unknown`, built by Trunk). No SSR, no hydration. Without JS or with reduced motion, the static `.unwrap()` span shows.
 - Writing pages are plain HTML from `sitegen`, run by `deploy.sh` after `trunk build` (`SITE_ROOT=. DIST_DIR=frontend/dist cargo run -p sitegen`). `trunk serve` does not run it.
 - The server is not a Leptos server. It serves `DIST_DIR` and two typed endpoints. Add endpoints to the single `servant` API description, not as side routes.
-- The GitHub/LinkedIn/Email links live in three places: `frontend/index.html`, `SITE_HEADER` in `sitegen/src/main.rs`, and `SOCIAL_LINKS` in `server/src/main.rs` (the API; its `icon_path`s point at `src/app/social_links/icons/`, still copied by Trunk). Change them together.
+- Every page shares one header (name, sentence, links, PGP line). It lives in `frontend/index.html` and, with the name as a home link, in `SITE_HEADER` in `sitegen/src/main.rs`; keep both in step. The GitHub/LinkedIn/Email links also appear in `SOCIAL_LINKS` in `server/src/main.rs` (the API; its `icon_path`s point at `src/app/social_links/icons/`, still copied by Trunk). Change them together.
 - The server depends on the sibling checkout `../servant-rs` through path dependencies. That checkout must exist to build the server.
 
 ## Scope Boundaries

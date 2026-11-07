@@ -121,15 +121,20 @@ fn stylesheet_href(index_html: &str) -> String {
         .map_or_else(|| "index.css".to_string(), |end| after[..end].to_string())
 }
 
-/// Header shared by generated pages: the name links home, then the homepage links.
-const SITE_HEADER: &str = r#"<header class="site-header">
-      <a class="home" href="/">Cole Leavitt</a>
+/// The homepage's header, repeated on every generated page so the site
+/// reads as one: the name (linking home here, since posts own the h1),
+/// the sentence, the links and the PGP line. Keep in step with
+/// `frontend/index.html`.
+const SITE_HEADER: &str = r#"<header class="intro">
+      <p class="name"><a href="/">Cole Leavitt</a></p>
+      <p class="statement">I build and break systems software in <span class="accent">Rust</span>.</p>
       <nav class="links" aria-label="Elsewhere">
         <a href="/writing/">Writing</a>
         <a href="https://github.com/coleleavitt" rel="noopener noreferrer">GitHub</a>
         <a href="https://www.linkedin.com/in/coleleavitt/" rel="noopener noreferrer">LinkedIn</a>
         <a href="mailto:cole@unwrap.rs">Email</a>
       </nav>
+      <p class="pgp"><a href="/pgp.asc" title="OpenPGP key"><span>PGP DEC2 3202 3B77 3F66 98EA</span> <span>54F1 1DFB 3167 910E 6193</span></a><a href="https://keyoxide.org/DEC232023B773F6698EA54F11DFB3167910E6193">verify</a></p>
     </header>"#;
 
 const LATEST_START: &str = "<!-- sitegen:latest -->";
