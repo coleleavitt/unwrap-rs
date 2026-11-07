@@ -13,6 +13,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use pulldown_cmark::{Options, Parser, html};
 
+use mmd_svg;
+
 const SITE_URL: &str = "https://unwrap.rs";
 
 /// One parsed post.
@@ -65,13 +67,41 @@ fn field<'a>(fields: &'a [(String, String)], key: &str) -> Option<&'a str> {
         .map(|(_, v)| v.as_str())
 }
 
+/// Render post Markdown to HTML. ` ```mermaid ` fences are rendered to
+/// inline SVG at build time via `mmd-svg`; everything else goes through
+/// pulldown-cmark.
 fn render_markdown(md: &str) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_FOOTNOTES);
     options.insert(Options::ENABLE_STRIKETHROUGH);
     let mut out = String::new();
-    html::push_html(&mut out, Parser::new_ext(md, options));
+    let mut plain = String::new();
+    let mut lines = md.lines();
+    while let Some(line) = lines.next() {
+        if line.trim_end() != "```mermaid" {
+            plain.push_str(line);
+            plain.push('\n');
+            continue;
+        }
+        html::push_html(&mut out, Parser::new_ext(&plain, options));
+        plain.clear();
+        let mut src = String::new();
+        for line in lines.by_ref() {
+            if line.trim_end() == "```" {
+                break;
+            }
+            src.push_str(line);
+            src.push('\n');
+        }
+        match mmd_svg::render(&src) {
+            Ok(svg) => {
+                let _ = write!(out, "<figure class=\"diagram\">{svg}</figure>\n");
+            }
+            Err(e) => panic!("mermaid block failed to render: {e}"),
+        }
+    }
+    html::push_html(&mut out, Parser::new_ext(&plain, options));
     out
 }
 
@@ -470,6 +500,17 @@ draft: true
             "# Just markdown
 "
         );
+    }
+
+    #[test]
+    fn mermaid_fence_becomes_inline_svg_figure() {
+        let html = render_markdown(
+            "before\n\n```mermaid\nflowchart TD\n A[Up] --> B{Ask}\n```\n\nafter\n",
+        );
+        assert!(html.contains("<figure class=\"diagram\"><svg"));
+        assert!(html.contains("before"));
+        assert!(html.contains("after"));
+        assert!(!html.contains("```"));
     }
 
     #[test]

@@ -12,6 +12,8 @@ publish = false
 [dependencies]
 # rust-lang maintained CommonMark parser (same one rustdoc uses); build tool only
 pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
+# Sibling checkout: renders ```mermaid fences to inline SVG at build time
+mmd-svg = { path = "../../mmd-svg" }
 
 [lints]
 workspace = true

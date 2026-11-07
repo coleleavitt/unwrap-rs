@@ -12,13 +12,24 @@ A corrupted TLS record is not a "flaky Wi-Fi" problem. The radio either delivers
 
 First I made the failure repeatable: a scripted large upload, run over and over, counting the `bad_record_mac` failures. Then I changed one thing at a time. The rate tracked a single access point in the building. Reassociating to a different AP made it go away; coming back brought it back. Rebooting that AP cleared it for a while. That is a controlled experiment, not a hunch: the fault lived in one box, and it looked like memory getting corrupted on the transmit path.
 
+```mermaid
+flowchart TD
+    APP[HTTPS upload] --> TLS[TLS record encrypted + MAC'd]
+    TLS --> WIFI[Wi-Fi frames]
+    WIFI --> AP{Access point}
+    AP -->|record arrives changed| BAD[TLS bad_record_mac]
+    AP -->|record intact| NET[Internet]
+```
+
 To say anything more precise, I had to read the firmware.
 
-## The tools couldn't read the chip
+## IDA doesn't speak Xtensa
 
-The AP runs on a Qualcomm QCA4019. Its Wi-Fi firmware runs on a Tensilica **Xtensa** core, a configurable architecture that is nothing like x86 or ARM. I pulled the firmware image and opened it in the usual reverse-engineering tools. They struggled. Xtensa support is thin, the image was stripped, and the instructions are variable length, some 16-bit and some 24-bit, so a disassembler that loses alignment for one instruction gets every instruction after it wrong. I could not trust the output enough to reason about memory ordering, which was exactly the thing I needed to check.
+The AP runs on a Qualcomm QCA4019, and its Wi-Fi firmware runs on a Tensilica **Xtensa** core. That is the catch. Xtensa is a configurable architecture, nothing like x86 or ARM, and IDA Pro has no native processor module for it. Neither does Ghidra, out of the box. The disassemblers I reach for every day simply could not read this binary.
 
-So I stopped fighting the tools and wrote my own decoder.
+What they produced was worse than nothing. The image was stripped, and Xtensa instructions are variable length, some 16-bit and some 24-bit. A disassembler that loses alignment on one instruction decodes every instruction after it wrong, and there is no obvious sign it has gone off the rails. I could not trust a single line of it, and I needed to reason about memory ordering down to the individual instruction.
+
+So I stopped fighting the tools and wrote my own decoder. That turned out to be a real project in itself, not an afternoon's hack.
 
 ## Building it from LLVM's own definitions
 
