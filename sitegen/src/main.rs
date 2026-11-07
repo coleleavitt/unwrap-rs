@@ -13,8 +13,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use pulldown_cmark::{Options, Parser, html};
 
-use mmd_svg;
-
 const SITE_URL: &str = "https://unwrap.rs";
 
 /// One parsed post.
@@ -96,7 +94,11 @@ fn render_markdown(md: &str) -> String {
         }
         match mmd_svg::render(&src) {
             Ok(svg) => {
-                let _ = write!(out, "<figure class=\"diagram\">{svg}</figure>\n");
+                // focusable so keyboard users can scroll a wide diagram
+                let _ = writeln!(
+                    out,
+                    "<figure class=\"diagram\" tabindex=\"0\">{svg}</figure>"
+                );
             }
             Err(e) => panic!("mermaid block failed to render: {e}"),
         }
@@ -507,7 +509,7 @@ draft: true
         let html = render_markdown(
             "before\n\n```mermaid\nflowchart TD\n A[Up] --> B{Ask}\n```\n\nafter\n",
         );
-        assert!(html.contains("<figure class=\"diagram\"><svg"));
+        assert!(html.contains("<figure class=\"diagram\" tabindex=\"0\"><svg"));
         assert!(html.contains("before"));
         assert!(html.contains("after"));
         assert!(!html.contains("```"));
