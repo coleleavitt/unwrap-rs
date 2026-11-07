@@ -56,9 +56,9 @@ Do not add, unless Cole asks:
 
 ## Current State
 
-- Branch `dev`. The homepage/writing refactor of 2026-11-07 is uncommitted until Cole reviews it.
+- Branch `dev`. The 2026-11-07 refactor is merged but not deployed; production still runs the old site until `./deploy.sh`.
 - Layout: one left-aligned column (`--column: 50rem`) shared by the homepage and writing pages. One accent (`--accent: #66d9ef`).
-- No posts are published; `content/writing/post-template.md` is a draft (`draft: true`).
+- One post: `content/writing/aamva-pdf417.md` (the AAMVA CVEs; facts only from the public research repo). `post-template.md` is a draft (`draft: true`).
 - Unit tests: `server` (path resolution, content types) and `sitegen` (frontmatter, escaping, dates, feed/sitemap, homepage injection). `frontend/tests/typing_animation_test.rs` only runs on `wasm32` in a browser.
 
 ## Working Rules
