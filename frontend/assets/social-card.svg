@@ -1,32 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Source for frontend/social-card.png (1200x630). Same palette and type as the site. -->
+  <style>
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("../fonts/JetBrainsMono-latin.woff2") format("woff2");
+      font-weight: 100 800;
+    }
+    text { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  </style>
   <defs>
-    <radialGradient id="background" cx="72%" cy="50%" r="72%">
-      <stop offset="0" stop-color="#171f2e"/>
+    <radialGradient id="glow" cx="50%" cy="0%" r="75%" gradientTransform="translate(0 0) scale(1 0.8)">
+      <stop offset="0" stop-color="#131b27"/>
       <stop offset="1" stop-color="#0a0e14"/>
     </radialGradient>
-    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path d="M32 0H0V32" fill="none" stroke="#66d9ef" stroke-opacity="0.055"/>
-    </pattern>
   </defs>
 
-  <rect width="1200" height="630" fill="url(#background)"/>
-  <rect width="1200" height="630" fill="url(#grid)"/>
-  <path d="M72 88V542" stroke="#66d9ef" stroke-width="4"/>
+  <rect width="1200" height="630" fill="#0a0e14"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
 
-  <g font-family="DejaVu Sans Mono, monospace">
-    <text x="96" y="116" fill="#a6e22e" font-size="22" font-weight="600">unwrap.rs</text>
-    <text x="96" y="258" fill="#f8fafc" font-size="62" font-weight="700">Cole Leavitt</text>
-    <text x="96" y="326" fill="#66d9ef" font-size="31" font-weight="600">Principal Security Engineer</text>
-    <text x="96" y="375" fill="#a6e22e" font-size="27">Security Researcher</text>
-    <text x="96" y="511" fill="#f8fafc" fill-opacity="0.68" font-size="19">Rust · Systems Security · Vulnerability Research</text>
+  <text x="96" y="196" fill="#e8edf2" font-size="76" font-weight="700" letter-spacing="-1.5">Cole Leavitt</text>
+  <text x="96" y="256" fill="#8b97a6" font-size="30">I build and break systems software in <tspan fill="#66d9ef">Rust</tspan>.</text>
 
-    <g transform="translate(772 188)">
-      <rect width="352" height="210" rx="12" fill="#080b10" stroke="#66d9ef" stroke-opacity="0.24"/>
-      <circle cx="28" cy="28" r="5" fill="#f92672"/>
-      <circle cx="48" cy="28" r="5" fill="#a6e22e"/>
-      <circle cx="68" cy="28" r="5" fill="#66d9ef"/>
-      <text x="34" y="116" fill="#f8fafc" font-size="25" font-weight="600">Result&lt;T, E&gt;</text>
-      <text x="94" y="158" fill="#66d9ef" font-size="25" font-weight="600">.unwrap()</text>
-    </g>
-  </g>
+  <text x="96" y="430" fill="#e8edf2" font-size="68" font-weight="600">Result&lt;T, E&gt;<tspan fill="#66d9ef">.unwrap()</tspan></text>
+
+  <text x="96" y="552" fill="#8b97a6" font-size="26">unwrap.rs</text>
 </svg>
