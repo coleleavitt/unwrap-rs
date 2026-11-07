@@ -11,12 +11,12 @@
 }
 
 :root {
-    --bg: #0a0e14;
-    --bg-glow: #131b27;
-    --text: #e8edf2;
-    --muted: #8b97a6;
-    --faint: #232c38;
-    --accent: #66d9ef;
+    --bg: #0d0a10;
+    --bg-glow: #200826;
+    --text: #f0e8f4;
+    --muted: #a091a8;
+    --faint: #2e1a36;
+    --accent: #dd68ff;
     --column: 56rem;
     --gutter: 1.25rem;
     /* 16 JetBrains Mono advances at 1rem */
@@ -206,7 +206,7 @@ a {
 }
 
 .particle.settled {
-    text-shadow: 0 0 0.4em rgb(102 217 239 / 0.35);
+    text-shadow: 0 0 0.4em rgb(221 104 255 / 0.35);
 }
 
 /* Sections */
@@ -373,7 +373,7 @@ a {
 
 .post-body {
     max-width: 70ch;
-    color: #cdd5de;
+    color: #ddd3e2;
     font-size: 0.9375rem;
     line-height: 1.75;
 }
@@ -428,7 +428,7 @@ a {
     padding: 1rem 1.25rem;
     border: 1px solid var(--faint);
     border-radius: 4px;
-    background: #070a0f;
+    background: #08060a;
     line-height: 1.55;
 }
 

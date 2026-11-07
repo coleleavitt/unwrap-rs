@@ -10,18 +10,18 @@
   </style>
   <defs>
     <radialGradient id="glow" cx="50%" cy="0%" r="75%" gradientTransform="translate(0 0) scale(1 0.8)">
-      <stop offset="0" stop-color="#131b27"/>
-      <stop offset="1" stop-color="#0a0e14"/>
+      <stop offset="0" stop-color="#200826"/>
+      <stop offset="1" stop-color="#0d0a10"/>
     </radialGradient>
   </defs>
 
-  <rect width="1200" height="630" fill="#0a0e14"/>
+  <rect width="1200" height="630" fill="#0d0a10"/>
   <rect width="1200" height="630" fill="url(#glow)"/>
 
-  <text x="96" y="196" fill="#e8edf2" font-size="76" font-weight="700" letter-spacing="-1.5">Cole Leavitt</text>
-  <text x="96" y="256" fill="#8b97a6" font-size="30">I build and break systems software in <tspan fill="#66d9ef">Rust</tspan>.</text>
+  <text x="96" y="196" fill="#f0e8f4" font-size="76" font-weight="700" letter-spacing="-1.5">Cole Leavitt</text>
+  <text x="96" y="256" fill="#a091a8" font-size="30">I build and break systems software in <tspan fill="#dd68ff">Rust</tspan>.</text>
 
-  <text x="96" y="430" fill="#e8edf2" font-size="68" font-weight="600">Result&lt;T, E&gt;<tspan fill="#66d9ef">.unwrap()</tspan></text>
+  <text x="96" y="430" fill="#f0e8f4" font-size="68" font-weight="600">Result&lt;T, E&gt;<tspan fill="#dd68ff">.unwrap()</tspan></text>
 
-  <text x="96" y="552" fill="#8b97a6" font-size="26">unwrap.rs</text>
+  <text x="96" y="552" fill="#a091a8" font-size="26">unwrap.rs</text>
 </svg>

@@ -160,7 +160,7 @@ fn page(
   <meta name="author" content="Cole Leavitt" />
   <link rel="canonical" href="{url}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0a0e14" />
+  <meta name="theme-color" content="#0d0a10" />
   <meta property="og:type" content="{og_type}" />
   <meta property="og:title" content="{title}" />
   <meta property="og:description" content="{description}" />

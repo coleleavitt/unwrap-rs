@@ -8,9 +8,9 @@ pub struct ColorScheme {
 
 impl ColorScheme {
     pub const DEFAULT: Self = Self {
-        primary: "#66d9ef",
-        secondary: "#3d5875",
-        accent: "#c4f1fa",
+        primary: "#dd68ff",
+        secondary: "#5f1973",
+        accent: "#f3d0ff",
         background: "transparent",
     };
 }
