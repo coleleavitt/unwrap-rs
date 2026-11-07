@@ -1,12 +1,10 @@
 +++
-title: My laptop kept waking up to a black screen, so I went and fixed it in the kernel
+title: A Thunderbolt 5 resume hang: pciehp and the thunderbolt driver racing in the noirq phase
 date: 2026-11-07
-description: A Thunderbolt 5 resume hang on my ThinkPad, how I tracked it down to a race in system resume, and how an unrelated crash finally got me to send the fixes upstream.
+description: My laptop sometimes woke to a black screen. The cause was a hotplug removal running in the middle of system resume, unserialized against the driver it removed.
 +++
 
-My laptop is a ThinkPad P16 Gen 3. It has a Thunderbolt 5 controller on its own PCIe link, an Intel JHL9580 ("Barlow Ridge"), and every so often it would wake from sleep to a black screen. Not every time. Just often enough to be annoying, and rare enough to be hard to catch.
-
-When it did crash, the kernel log had this:
+My ThinkPad P16 Gen 3 has a discrete Thunderbolt 5 host controller, an Intel JHL9580 ("Barlow Ridge"), below PCIe Root Port `0000:80:1b.4`. Every so often, resume from suspend-to-idle ended in a black screen. With `panic=10` on the kernel command line the machine rebooted itself ten seconds later, and the oops survived in pstore (`/sys/fs/pstore/dmesg-ramoops-*`):
 
 ```
 pcieport 0000:80:1b.4: Data Link Layer Link Active not set in 100 msec
@@ -14,51 +12,56 @@ pcieport 0000:80:1b.4: pciehp: Slot(25): Card not present
 thunderbolt 0000:8a:00.0: RX ring 0 already stopped
 ...
 Oops: general protection fault, kernel NULL pointer dereference 0x32b
+Workqueue: async async_run_entry_fn
 RIP: 0010:tb_resume_noirq+0x3f/0x2e0 [thunderbolt]
 Call Trace:
  tb_domain_resume_noirq+0x42/0x60 [thunderbolt]
  dpm_run_callback+0x4b/0x140
  device_resume_noirq+0x16d/0x2c0
  async_resume_noirq+0x21/0x30
+ async_run_entry_fn+0x36/0x160
 ```
 
-The crash is at the bottom, but the story is in the first two lines.
+The first two lines are the whole story, once you follow them.
 
-## Digging in
+## What happens
 
-The first line says the PCIe link to the Thunderbolt controller wasn't back up within 100 ms of waking. Fine, slow hardware happens. The second line is where it goes wrong: the hotplug driver, pciehp, decides the card is *not present*.
+1. The Root Port leaves D3cold, but the link to Barlow Ridge is not up within 100 ms. The PCI core marks the devices below it as disconnected.
+2. `pciehp_resume_noirq()` concludes that the device in the slot was **replaced** and synthesizes a Presence Detect Changed event with `pciehp_request()`, which wakes the hotplug IRQ thread through `irq_wake_thread()`.
+3. `suspend_device_irqs()` holds back real interrupts during this phase, but it does not stop `irq_wake_thread()`. So the IRQ thread starts tearing the slot down immediately, in the middle of the noirq phase.
+4. In the noirq and early phases the PM core resumes the devices below the port asynchronously and holds no `device_lock`. Nothing serializes the removal against their `->resume_noirq()` callbacks.
+5. On one CPU, the removal runs `nhi_pci_remove()` → `tb_domain_remove()` → `tb_stop()`, which sets `tb->root_switch` to `NULL`. On another, `nhi_resume_noirq()` → `tb_resume_noirq()` dereferences `tb->root_switch`.
 
-So I followed it. `pciehp_resume_noirq()` sees the devices under the port marked disconnected and concludes the device in the slot was **replaced**. To deal with that, it fakes a "presence changed" event with `pciehp_request()`, which wakes the hotplug IRQ thread through `irq_wake_thread()`.
+Before commit `e56249d8a68e` ("thunderbolt: Set tb->root_switch to NULL when domain is stopped") the pointer was left dangling instead, so older kernels hit the same race as a use-after-free rather than a clean NULL dereference. And nothing here is specific to Thunderbolt: any driver below a hotplug port is exposed to the same race.
 
-That's the catch. During this part of resume, `suspend_device_irqs()` keeps real interrupts quiet, but `irq_wake_thread()` isn't an interrupt, so nothing holds it back. The IRQ thread starts removing the Thunderbolt controller right there, in the middle of the noirq phase.
+## The fixes
 
-And the noirq phase isn't serialized. The PM core resumes the devices below the port asynchronously and holds no `device_lock`. So on one CPU the removal path runs `nhi_pci_remove()` → `tb_domain_remove()` → `tb_stop()`, which sets `tb->root_switch` to `NULL`. On another CPU the Thunderbolt driver's own resume, `tb_resume_noirq()`, reaches for `tb->root_switch`. Boom.
+**pciehp: defer the replacement until `->resume()`.** `pciehp_resume_noirq()` now only records the synthesized event, and `pciehp_system_resume()` wakes the IRQ thread. By then every noirq and early callback has finished, and `device_resume()` holds the `device_lock` across each driver's `->resume()`, the same lock the removal path takes in `device_release_driver()`. It is also where `pciehp_check_presence()` already brings down slots that were vacated during sleep. The old devices are still marked disconnected in the noirq phase, so their drivers and any nested hotplug ports keep seeing them as gone. Runtime resume is unchanged.
 
-Fun detail: before commit `e56249d8a68e` that pointer was left dangling instead of `NULL`, so older kernels had the same race as a use-after-free. And none of this is really Thunderbolt-specific. Any driver below a hotplug port can lose that race.
+**thunderbolt: don't resume a connection manager whose host is gone.** When the controller has vanished, `nhi_resume_noirq()` sets `nhi->going_away` and `tb_ring_start()` refuses to start the control rings. The software connection manager resumed anyway, so every control request failed with `-ESHUTDOWN` and `tb_cfg_read()` / `tb_cfg_write()` printed a WARN for each one:
 
-## What I changed
+```
+tb_cfg_write: -108
+WARNING: drivers/thunderbolt/ctl.c:1157 at tb_cfg_write+0x94/0xf0 [thunderbolt]
+...
+thunderbolt 0000:8a:00.0: 0: failed to restore TMU configuration
+```
 
-- **pciehp:** don't act on the faked event during noirq. Just record it, and wake the IRQ thread from `pciehp_system_resume()`, the normal `->resume()` step. By then every noirq callback is done, and `device_resume()` holds the `device_lock` that the removal path also needs, so they can't overlap anymore.
-- **thunderbolt:** when the controller is already gone on resume, the driver sets `nhi->going_away`, but the software connection manager still tried to resume through dead rings. Every request failed with `-ESHUTDOWN` and spammed a WARN. Now it skips resume in that case, like the firmware connection manager already did.
-- **USB:** the same scenario turned up a third bug. A USB controller that disappears mid-resume got disabled twice, and the PCI core complained. Now it only disables it if it's still enabled.
+The firmware connection manager already checks the flag in `icm_complete()`. The software one now does the same and skips `tb_resume_noirq()`.
 
-I wrote these in September and have been running them on my own kernel since.
+**USB: don't disable a disabled controller.** The same scenario surfaced a third bug. `suspend_common()` disables a USB host controller and `resume_common()` re-enables it. If the controller is hot-removed during resume before its `->resume()` runs, `usb_hcd_pci_remove()` disables it a second time and the PCI core warns, `disabling already-disabled device`. The fix only disables it if it is still enabled.
 
-## Getting them upstream
+## Status
 
-Here's the honest part: they sat on a local branch for a month.
-
-What changed was an unrelated crash on October 18. The laptop panicked in memory-cgroup accounting and rebooted itself, because I boot with `panic=10`. The log survived in pstore, so the first job was reading that. But while I was in there, I went through all the patches I carry on my kernel, and asked about each one: is this a real bug, and does it belong upstream?
-
-For these three the answer was yes. Before sending, I didn't want to rely on "it works on my machine". I walked the control flow through the kernel source with tree-sitter and libclang to check that every path really behaves the way each commit message says. Then I checked everything against the kernel's *Submitting patches* guide, and sent them the same day:
+I posted all three on 2026-10-18, against v7.3-rc7:
 
 - [PATCH 0/2] PCI: pciehp / thunderbolt: Fix resume with a slow Thunderbolt host link ([lore](https://lore.kernel.org/all/20261018163750.130470-1-cole@unwrap.rs/))
 - [PATCH] USB: hcd-pci: Do not disable an already disabled device on remove ([lore](https://lore.kernel.org/all/20261018164134.134106-1-cole@unwrap.rs/)), acked by Alan Stern
 
-They're still under review, not merged yet. (The memcg crash is a story for another post.)
+They are still under review, not merged. I run them on this laptop every day.
 
-## What I'd tell myself
+## What I took from it
 
-- **A slow link looks like an unplug.** "Not up in 100 ms" became "card not present", then "card replaced", then a removal. Every step makes sense on its own, and together they crash.
-- **`irq_wake_thread()` isn't an interrupt.** If you count on `suspend_device_irqs()` to keep threaded handlers quiet during resume, that path gets around it.
-- **Send the patch.** A fix on my branch helps one laptop. The same fix upstream helps everyone with this hardware.
+- **The noirq phase is not serialized against hotplug.** A removal that starts there races every driver below the port.
+- **`irq_wake_thread()` is not an interrupt.** Code that relies on `suspend_device_irqs()` to keep threaded handlers quiet during resume has to treat it separately.
+- **A slow link looks like an unplug.** "Link not up within 100 ms" became "the card is gone", then "the card was replaced", then a removal. Each step is reasonable on its own.
