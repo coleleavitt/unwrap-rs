@@ -14,12 +14,19 @@ The emitter lights every other frame. The camera's metadata node says which fram
 
 ## The pipeline
 
-```
-IR metadata  ── emitter on/off per frame ─┐
-IR camera    ─────────────────────────────┴▶ lit + ambient frame pair
-   lit frame ─▶ face detect ─▶ size / edge / brightness gates
-             ─▶ face recognition on (lit − ambient) ─▶ match against the user's prints
-RGB camera   ─▶ face detect ─▶ visible-light liveness net (vetoes a printed photo)
+```mermaid
+flowchart TD
+    META[IR metadata: emitter on/off per frame] --> PAIR{lit + ambient frame pair}
+    IR[IR camera] --> PAIR
+    PAIR -->|lit frame| GATES[Face detect + size / edge / brightness gates]
+    GATES --> ARC[ArcFace on lit - ambient]
+    ARC --> MATCH{Match against the user's prints?}
+    MATCH -->|yes| LIVE[Liveness votes: 2 to unlock]
+    RGB[RGB camera 640x360] --> VL[Visible-light liveness net]
+    VL -->|vetoes a printed photo| SPOOF[Spoof vote: 3 to reject]
+    MATCH -->|no| REJ[Reject with the reason]
+    LIVE --> OK[PAM: unlock]
+    SPOOF --> REJ
 ```
 
 A few things I took from studying how Windows Hello behaves:

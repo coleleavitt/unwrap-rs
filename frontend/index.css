@@ -457,6 +457,16 @@ a {
     background: none;
 }
 
+.post-body .diagram {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.post-body .diagram svg {
+    max-width: 100%;
+    height: auto;
+}
+
 .post-body blockquote {
     padding-left: 1rem;
     border-left: 2px solid var(--faint);
