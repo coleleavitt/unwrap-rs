@@ -166,7 +166,9 @@ fn page(
   <meta property="og:description" content="{description}" />
   <meta property="og:url" content="{url}" />
   <meta property="og:site_name" content="Cole Leavitt" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="alternate" type="application/atom+xml" title="Cole Leavitt: writing" href="/feed.xml" />
   <link rel="preload" href="/fonts/JetBrainsMono-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="{css_href}" />
