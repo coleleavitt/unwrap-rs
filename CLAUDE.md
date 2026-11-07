@@ -21,7 +21,7 @@ The repo is a Cargo workspace (edition 2024) with three crates (`frontend`, `ser
 |---|---|---|
 | Page content | `frontend/index.html` | Static homepage HTML: name, sentence, link row, Work list, the `<!-- sitegen:latest -->` marker |
 | Animation | `frontend/src/app/typing_animation/`, `frontend/src/main.rs` | The particle animation, mounted into `#animation-mount` (skipped under reduced motion) |
-| Writing | `content/writing/*.md`, `sitegen/` | Markdown posts rendered to `dist/writing/`, `feed.xml`, `sitemap.xml`, and the homepage's latest-posts section |
+| Writing | `content/writing/*.md`, `sitegen/` | Markdown posts rendered to `dist/writing/`, `feed.xml`, `sitemap.xml`, and the homepage's latest-posts section (skips posts the homepage already links to) |
 | Document and SEO | `frontend/index.html` head, `robots.txt`, `social-card.png`, `assets/social-card.svg`, `favicon.svg` | `<title>`, Open Graph, JSON-LD, canonical URL, Trunk asset directives |
 | Keys and disclosure | `frontend/pgp.asc`, `frontend/.well-known/` (`security.txt`, `openpgpkey/` WKD) | Cole's OpenPGP keys (`DEC2 3202 3B77…6193` primary, `2EFA…3402` older, cross-signed), RFC 9116 contact. Re-export both and the WKD file (`gpg --list-keys --with-wkd-hash`) when a key changes; renew `Expires` in `security.txt` yearly |
 | Styling | `frontend/index.css`, `frontend/tailwind.config.js`, `frontend/fonts/` | One stylesheet for every page; self-hosted JetBrains Mono (Latin subset, OFL) |
@@ -57,7 +57,7 @@ Do not add, unless Cole asks:
 ## Current State
 
 - Branch `dev`. The 2026-11-07 refactor is merged but not deployed; production still runs the old site until `./deploy.sh`.
-- Layout: one left-aligned column (`--column: 50rem`) shared by the homepage and writing pages. One accent (`--accent: #dd68ff`).
+- Layout: one left-aligned column (`--column: 56rem`) shared by the homepage and writing pages. One accent (`--accent: #dd68ff`).
 - One post: `content/writing/aamva-pdf417.md` (the AAMVA CVEs; facts only from the public research repo). `post-template.md` is a draft (`draft: true`).
 - Unit tests: `server` (path resolution, content types) and `sitegen` (frontmatter, escaping, dates, feed/sitemap, homepage injection). `frontend/tests/typing_animation_test.rs` only runs on `wasm32` in a browser.
 

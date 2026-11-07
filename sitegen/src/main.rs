@@ -184,7 +184,7 @@ fn page(
 
 /// Post list shared by /writing/ and the homepage, laid out like the other
 /// homepage entries: the title on the left, the month on the right.
-fn dated_entries(posts: &[Post]) -> String {
+fn dated_entries<'a>(posts: impl IntoIterator<Item = &'a Post>) -> String {
     let mut out = String::from("    <ul class=\"entries\">\n");
     for p in posts {
         writeln!(
@@ -246,12 +246,21 @@ fn writing_index(posts: &[Post], css_href: &str) -> String {
     )
 }
 
-/// Homepage section listing the newest posts; empty until something is published.
-fn latest_section(posts: &[Post]) -> String {
-    if posts.is_empty() {
+/// Homepage section listing the newest posts that the homepage does not
+/// already link to (a post featured under Research is not repeated here).
+/// Empty when no such post exists.
+fn latest_section(posts: &[Post], home_html: &str) -> String {
+    // Ignore links inside an earlier run's injected region.
+    let page = inject_latest(home_html, "").unwrap_or_else(|| home_html.to_string());
+    let unfeatured: Vec<&Post> = posts
+        .iter()
+        .filter(|p| !page.contains(&format!("href=\"/writing/{}/\"", p.slug)))
+        .take(LATEST_COUNT)
+        .collect();
+    if unfeatured.is_empty() {
         return String::new();
     }
-    let list = dated_entries(&posts[..posts.len().min(LATEST_COUNT)]);
+    let list = dated_entries(unfeatured);
     format!(
         r#"
     <section class="section" aria-labelledby="writing-heading">
@@ -416,7 +425,7 @@ fn main() -> std::io::Result<()> {
             &post_page(post, &css_href),
         )?;
     }
-    if let Some(home) = inject_latest(&index_html, &latest_section(&posts)) {
+    if let Some(home) = inject_latest(&index_html, &latest_section(&posts, &index_html)) {
         fs::write(dist.join("index.html"), home)?;
     }
     write_dist(&dist, "feed.xml", &atom_feed(&posts))?;
@@ -495,6 +504,25 @@ draft: true
             "<main>a<!-- sitegen:latest -->Y<!-- /sitegen:latest -->b</main>"
         );
         assert_eq!(inject_latest("<main></main>", "X"), None);
+    }
+
+    #[test]
+    fn latest_skips_posts_the_homepage_already_links() {
+        let post = |slug: &str| Post {
+            slug: slug.into(),
+            title: slug.into(),
+            date: "2026-11-07".into(),
+            description: String::new(),
+            body_html: String::new(),
+        };
+        let posts = [post("featured"), post("other")];
+        let home = r#"<a href="/writing/featured/">x</a><!-- sitegen:latest -->"#;
+        let section = latest_section(&posts, home);
+        assert!(section.contains("/writing/other/") && !section.contains("/writing/featured/"));
+        assert_eq!(latest_section(&posts[..1], home), "");
+        // Links from an earlier run's injected list do not count as featured.
+        let rerun = inject_latest(home, &section).unwrap();
+        assert!(latest_section(&posts, &rerun).contains("/writing/other/"));
     }
 
     #[test]
