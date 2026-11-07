@@ -26,8 +26,8 @@ Generic card-grid portfolio templates, keyword-stuffed cybersecurity landing pag
 - Let the Rust interaction demonstrate craft instead of over-explaining it.
 - Keep every claim specific, truthful, and visible on the page.
 - Make GitHub, LinkedIn, and email reachable in one step.
-- Preserve the compact mission-control character without obscuring basic context.
+- Preserve the compact mission-control character without obscuring the basic context.
 
 ## Accessibility & Inclusion
 
-Target WCAG 2.2 AA. Preserve browser zoom, keyboard navigation, visible focus, readable contrast, touch targets of at least 44px, and a reduced-motion experience.
+Target WCAG 2.2 AA. Preserve browser zoom, keyboard navigation, visible focus, readable contrast, touch targets of at least 44 px, and a reduced-motion experience.
