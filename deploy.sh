@@ -191,6 +191,9 @@ PY
     curl --fail --silent --show-error "$smoke_url/writing/" >/dev/null || die "local /writing/ check failed"
     response=$(curl --fail --silent --show-error "$smoke_url/.well-known/security.txt")
     [[ $response == Contact:* ]] || die "local security.txt check failed"
+    headers=$(curl --fail --silent --show-error --head "$smoke_url/")
+    grep -qi "^content-security-policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval' 'sha256-" <<<"$headers" \
+        || die "local CSP header check failed"
     response=$(curl --fail --silent --show-error "$smoke_url/pgp.asc")
     [[ $response == '-----BEGIN PGP PUBLIC KEY BLOCK-----'* ]] || die "local pgp.asc check failed"
     response=$(curl --fail --silent --show-error "$smoke_url/feed.xml" || true)

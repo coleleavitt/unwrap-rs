@@ -22,10 +22,10 @@ The repo is a Cargo workspace (edition 2024) with three crates (`frontend`, `ser
 | Page content | `frontend/index.html` | Static homepage HTML: name, sentence, link row, Work list, the `<!-- sitegen:latest -->` marker |
 | Animation | `frontend/src/app/typing_animation/`, `frontend/src/main.rs` | The particle animation, mounted into `#animation-mount` (skipped under reduced motion) |
 | Writing | `content/writing/*.md`, `sitegen/` | Markdown posts rendered to `dist/writing/`, `feed.xml`, `sitemap.xml`, and the homepage's latest-posts section (skips posts the homepage already links to) |
-| Document and SEO | `frontend/index.html` head, `robots.txt`, `social-card.png`, `assets/social-card.svg`, `favicon.svg` | `<title>`, Open Graph, JSON-LD, canonical URL, Trunk asset directives |
+| Document and SEO | `frontend/index.html` head, `robots.txt`, `social-card.png`, `assets/social-card.svg`, `favicon.svg` (plus `favicon.ico` and `apple-touch-icon.png`, rendered from it) | `<title>`, Open Graph, JSON-LD, canonical URL, Trunk asset directives |
 | Keys and disclosure | `frontend/pgp.asc`, `frontend/.well-known/` (`security.txt`, `openpgpkey/` WKD) | Cole's OpenPGP keys (`DEC2 3202 3B77…6193` primary, `2EFA…3402` older, cross-signed), RFC 9116 contact. Re-export both and the WKD file (`gpg --list-keys --with-wkd-hash`) when a key changes; renew `Expires` in `security.txt` yearly |
 | Styling | `frontend/index.css`, `frontend/tailwind.config.js`, `frontend/fonts/` | One stylesheet for every page; self-hosted JetBrains Mono (Latin subset, OFL) |
-| Server | `server/src/main.rs` | One servant-rs API description: `GET /api/health`, `GET /api/social-links`, and a `Raw` static-file catch-all for `dist/` with directory indexes |
+| Server | `server/src/main.rs` | One servant-rs API description: `GET /api/health`, `GET /api/social-links`, and a `Raw` static-file catch-all for `dist/` with directory indexes and the security headers (CSP, Permissions-Policy, COOP; CORS on the WKD path) |
 | Deploy | `deploy.sh`, `deploy/unwrap-rs.service` | Build (trunk, then sitegen), smoke test, atomic release, status, rollback on the `linode` host |
 
 Animation module boundaries (keep them):
@@ -40,6 +40,7 @@ Composition rules:
 
 - The homepage is static HTML; only the animation is Leptos 0.8 CSR (`wasm32-unknown-unknown`, built by Trunk). No SSR, no hydration. Without JS or with reduced motion, the static `.unwrap()` span shows.
 - Writing pages are plain HTML from `sitegen`, run by `deploy.sh` after `trunk build` (`SITE_ROOT=. DIST_DIR=frontend/dist cargo run -p sitegen`). `trunk serve` does not run it.
+- The CSP allows Trunk's inline loader by hash, read from `dist/index.html` when the server starts. Restart the server after every rebuild, or the stale hash blocks the animation (deploys restart it).
 - The server is not a Leptos server. It serves `DIST_DIR` and two typed endpoints. Add endpoints to the single `servant` API description, not as side routes.
 - Every page shares one header (name, sentence, links, PGP line). It lives in `frontend/index.html` and, with the name as a home link, in `SITE_HEADER` in `sitegen/src/main.rs`; keep both in step. The GitHub/LinkedIn/Email links also appear in `SOCIAL_LINKS` in `server/src/main.rs` (the API; its `icon_path`s point at `src/app/social_links/icons/`, still copied by Trunk). Change them together.
 - The server depends on the sibling checkout `../servant-rs` through path dependencies. That checkout must exist to build the server.
