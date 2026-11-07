@@ -177,16 +177,18 @@ fn page(
     )
 }
 
-/// Date-first list of posts, shared by /writing/ and the homepage.
+/// Post list shared by /writing/ and the homepage, laid out like the other
+/// homepage entries: the title on the left, the month on the right.
 fn dated_entries(posts: &[Post]) -> String {
-    let mut out = String::from("    <ul class=\"entries entries--dated\">\n");
+    let mut out = String::from("    <ul class=\"entries\">\n");
     for p in posts {
         writeln!(
             out,
-            r#"      <li><a href="/writing/{slug}/"><time class="entry-name" datetime="{date}">{date}</time><span class="entry-desc">{title}</span></a></li>"#,
+            r#"      <li><a href="/writing/{slug}/"><span class="entry-title">{title}</span><time class="entry-meta" datetime="{date}">{month}</time></a></li>"#,
             slug = p.slug,
-            date = p.date,
             title = esc(&p.title),
+            date = p.date,
+            month = p.date.get(..7).unwrap_or(&p.date),
         )
         .expect("writing to a String cannot fail");
     }
