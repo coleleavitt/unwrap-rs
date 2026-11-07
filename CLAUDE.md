@@ -58,7 +58,7 @@ Do not add, unless Cole asks:
 ## Current State
 
 - Branch `dev`. Deployed 2026-11-07 (release `20261107T181131Z-83b9d30`).
-- Production nginx (`/etc/nginx/sites-enabled/unwrap.rs` on `linode`, not in this repo) proxies `/.well-known` and `/proof` to a Nebula peer (192.168.100.3). Two locations added 2026-11-07 send `= /.well-known/security.txt` and `^~ /.well-known/openpgpkey/` to the app instead; backup in `/root/unwrap.rs.nginx.bak-20261107T181213`.
+- Production nginx (`/etc/nginx/sites-enabled/unwrap.rs` on `linode`, not in this repo) proxies everything to the app except `/dori/`. It adds only HSTS and `X-Frame-Options`; every other security header comes from the app, so do not add duplicates in nginx. The old `/.well-known` and `/proof` proxy to a Nebula peer was removed on 2026-11-07 (backups in `/root/unwrap.rs.nginx.bak-*`). TLS renews by DNS-01 through Cloudflare.
 - Cloudflare injects its Web Analytics beacon; the CSP blocks it. Turn it off in the Cloudflare dashboard rather than allowing it.
 - Layout: one left-aligned column (`--column: 56rem`) shared by the homepage and writing pages. One accent (`--accent: #dd68ff`).
 - One post: `content/writing/aamva-pdf417.md` (the AAMVA CVEs; facts only from the public research repo). `post-template.md` is a draft (`draft: true`).
