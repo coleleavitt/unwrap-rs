@@ -1,0 +1,6 @@
+Contact: mailto:cole@unwrap.rs
+Expires: 2027-11-07T00:00:00.000Z
+Encryption: https://unwrap.rs/pgp.asc
+Encryption: openpgp4fpr:DEC232023B773F6698EA54F11DFB3167910E6193
+Preferred-Languages: en
+Canonical: https://unwrap.rs/.well-known/security.txt
