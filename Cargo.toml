@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["frontend", "server"]
+members = ["frontend", "server", "sitegen"]
 # `cargo build`/`cargo test` at the root touch only the native server.
 # The frontend is a wasm32 crate driven by Trunk (see frontend/Trunk.toml);
 # building it for the host target fails on purpose (getrandom wasm_js backend).
@@ -34,7 +34,7 @@ match_same_arms = "allow"
 # Wildcard imports for enum variants in match blocks
 wildcard_imports = "allow"
 enum_glob_use = "allow"
-# Module inception (mod.rs with same name) is fine
+# Modules named by mod.rs are intentional
 module_name_repetitions = "allow"
 # Component / handler functions are necessarily large
 too_many_lines = "allow"

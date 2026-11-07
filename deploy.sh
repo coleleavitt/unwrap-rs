@@ -19,6 +19,7 @@ SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=10)
 RSYNC_RSH='ssh -o BatchMode=yes -o ConnectTimeout=10'
 LOCAL_SERVER_PID=
 TEMP_DIR=
+PENDING_REMOTE_RELEASE=
 
 log() {
     printf '[deploy] %s\n' "$*"
@@ -68,6 +69,9 @@ cleanup() {
     if [[ -n ${TEMP_DIR:-} && -d $TEMP_DIR ]]; then
         rm -rf -- "$TEMP_DIR"
     fi
+    if [[ -n ${PENDING_REMOTE_RELEASE:-} ]]; then
+        remote_discard_upload "$PENDING_REMOTE_RELEASE" >/dev/null 2>&1 || true
+    fi
 }
 trap cleanup EXIT
 
@@ -79,14 +83,17 @@ require_commands() {
 }
 
 validate_config() {
-    [[ $DEPLOY_HOST =~ ^[A-Za-z0-9._@:-]+$ ]] || die "unsafe DEPLOY_HOST: $DEPLOY_HOST"
-    [[ $REMOTE_ROOT =~ ^/[A-Za-z0-9._/-]+$ && $REMOTE_ROOT != / ]] || die "unsafe REMOTE_ROOT: $REMOTE_ROOT"
-    [[ $SERVICE =~ ^[A-Za-z0-9_.@-]+$ ]] || die "unsafe SERVICE: $SERVICE"
-    [[ $KEEP_RELEASES =~ ^[0-9]+$ && $KEEP_RELEASES -ge 1 ]] || die "KEEP_RELEASES must be a positive integer"
+    local origin_port
+    [[ $DEPLOY_HOST != -* && $DEPLOY_HOST =~ ^[A-Za-z0-9._@:-]+$ ]] || die "unsafe DEPLOY_HOST: $DEPLOY_HOST"
+    [[ $REMOTE_ROOT =~ ^/opt/[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$ ]] || die "REMOTE_ROOT must be a canonical path below /opt"
+    [[ $SERVICE != -* && $SERVICE =~ ^[A-Za-z0-9_.@-]+$ ]] || die "unsafe SERVICE: $SERVICE"
+    [[ $KEEP_RELEASES =~ ^[0-9]+$ && $KEEP_RELEASES -ge 2 ]] || die "KEEP_RELEASES must be at least 2"
     [[ $APP_PORT =~ ^[0-9]+$ && $APP_PORT -ge 1 && $APP_PORT -le 65535 ]] || die "APP_PORT must be between 1 and 65535"
     [[ $MIN_FREE_BYTES =~ ^[0-9]+$ ]] || die "MIN_FREE_BYTES must be a non-negative integer"
     [[ $BUILD_TARGET =~ ^[A-Za-z0-9._-]+$ ]] || die "unsafe BUILD_TARGET: $BUILD_TARGET"
     [[ $PUBLIC_URL =~ ^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?/?$ ]] || die "PUBLIC_URL must be a plain HTTP(S) origin"
+    origin_port=$(public_port)
+    [[ $origin_port -ge 1 && $origin_port -le 65535 ]] || die "PUBLIC_URL port must be between 1 and 65535"
 }
 
 public_host() {
@@ -94,6 +101,18 @@ public_host() {
     value=${value%%/*}
     value=${value%%:*}
     printf '%s\n' "$value"
+}
+
+public_port() {
+    local authority=${PUBLIC_URL#*://}
+    authority=${authority%/}
+    if [[ $authority == *:* ]]; then
+        printf '%s\n' "${authority##*:}"
+    elif [[ $PUBLIC_URL == https://* ]]; then
+        printf '443\n'
+    else
+        printf '80\n'
+    fi
 }
 
 wait_for_local_health() {
@@ -119,6 +138,13 @@ build_and_smoke_test() {
     (
         cd "$ROOT_DIR/frontend"
         env -u NO_COLOR trunk build --locked --release
+    )
+
+    log "generating writing pages"
+    (
+        cd "$ROOT_DIR"
+        SITE_ROOT="$ROOT_DIR" DIST_DIR="$ROOT_DIR/frontend/dist" \
+            cargo run --locked --release --quiet -p sitegen
     )
 
     local binary="$ROOT_DIR/target/$BUILD_TARGET/release/server"
@@ -162,6 +188,13 @@ PY
     [[ $response == User-agent:* ]] || die "local robots.txt check failed"
     response=$(curl --fail --silent --show-error "$smoke_url/sitemap.xml")
     [[ $response == *'<urlset'* ]] || die "local sitemap check failed"
+    curl --fail --silent --show-error "$smoke_url/writing/" >/dev/null || die "local /writing/ check failed"
+    response=$(curl --fail --silent --show-error "$smoke_url/.well-known/security.txt")
+    [[ $response == Contact:* ]] || die "local security.txt check failed"
+    response=$(curl --fail --silent --show-error "$smoke_url/pgp.asc")
+    [[ $response == '-----BEGIN PGP PUBLIC KEY BLOCK-----'* ]] || die "local pgp.asc check failed"
+    response=$(curl --fail --silent --show-error "$smoke_url/feed.xml" || true)
+    [[ $response == *'<feed'* ]] || die "local feed.xml check failed"
     headers=$(curl --fail --silent --show-error --head "$smoke_url/$(basename "$wasm_path")")
     grep -qi '^content-type: application/wasm' <<<"$headers" || die "local WASM content type check failed"
     [[ $(curl --silent --output /dev/null --write-out '%{http_code}' "$smoke_url/definitely-not-a-real-page") == 404 ]] || die "unknown paths must return 404"
@@ -210,6 +243,19 @@ archive_bytes=$4
 reserve_bytes=$5
 app_port=$6
 
+[[ $root =~ ^/opt/[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$ ]] || {
+    printf 'unsafe remote root: %s\n' "$root" >&2
+    exit 1
+}
+[[ $service != -* && $service =~ ^[A-Za-z0-9_.@-]+$ ]] || {
+    printf 'unsafe service name: %s\n' "$service" >&2
+    exit 1
+}
+[[ $release_id =~ ^[A-Za-z0-9._-]+$ ]] || {
+    printf 'unsafe release ID: %s\n' "$release_id" >&2
+    exit 1
+}
+
 for command in tar sha256sum systemctl curl flock find df nginx grep; do
     command -v "$command" >/dev/null 2>&1 || {
         printf 'missing remote command: %s\n' "$command" >&2
@@ -255,9 +301,24 @@ if [[ ${usage%%%} -ge 90 ]]; then
 fi
 
 upload="$root/uploads/$release_id"
-rm -rf -- "$upload"
-install -d -m 0700 "$upload"
+mkdir -m 0700 "$upload" || {
+    printf 'upload staging already exists: %s\n' "$upload" >&2
+    exit 1
+}
 printf '%s\n' "$upload"
+REMOTE
+}
+
+remote_discard_upload() {
+    local release_id=$1
+
+    ssh "${SSH_OPTS[@]}" "$DEPLOY_HOST" bash -s -- "$REMOTE_ROOT" "$release_id" <<'REMOTE'
+set -Eeuo pipefail
+root=$1
+release_id=$2
+[[ $root =~ ^/opt/[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$ ]]
+[[ $release_id =~ ^[A-Za-z0-9._-]+$ ]]
+rm -rf -- "$root/uploads/$release_id"
 REMOTE
 }
 
@@ -266,7 +327,7 @@ remote_activate() {
     local origin_host=$2
 
     ssh "${SSH_OPTS[@]}" "$DEPLOY_HOST" bash -s -- \
-        "$REMOTE_ROOT" "$SERVICE" "$release_id" "$APP_PORT" "$KEEP_RELEASES" "$PUBLIC_URL" "$origin_host" <<'REMOTE'
+        "$REMOTE_ROOT" "$SERVICE" "$release_id" "$APP_PORT" "$KEEP_RELEASES" "$PUBLIC_URL" "$origin_host" "$(public_port)" <<'REMOTE'
 set -Eeuo pipefail
 IFS=$'\n\t'
 
@@ -277,6 +338,16 @@ app_port=$4
 keep_releases=$5
 public_url=${6%/}
 origin_host=$7
+origin_port=$8
+
+[[ $root =~ ^/opt/[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$ ]] || {
+    printf 'unsafe remote root: %s\n' "$root" >&2
+    exit 1
+}
+[[ $release_id =~ ^[A-Za-z0-9._-]+$ ]] || {
+    printf 'unsafe release ID: %s\n' "$release_id" >&2
+    exit 1
+}
 
 releases="$root/releases"
 upload="$root/uploads/$release_id"
@@ -296,6 +367,15 @@ flock -n 9 || {
     exit 1
 }
 
+old_current=
+if [[ -L $root/current || -e $root/current ]]; then
+    old_current=$(readlink -f "$root/current")
+    [[ -d $old_current && $old_current == "$releases/"* && ${old_current#"$releases/"} != */* ]] || {
+        printf 'current release is outside the releases directory: %s\n' "$old_current" >&2
+        exit 1
+    }
+fi
+
 [[ -s $archive && -s $checksum ]] || {
     printf 'uploaded archive or checksum is missing\n' >&2
     exit 1
@@ -307,7 +387,7 @@ flock -n 9 || {
 
 rm -rf -- "$incoming"
 install -d -m 0755 "$incoming"
-tar -xzf "$archive" -C "$incoming"
+tar --no-same-owner -xzf "$archive" -C "$incoming"
 [[ -x $incoming/bin/server && -s $incoming/dist/index.html ]] || {
     printf 'release contents are incomplete\n' >&2
     exit 1
@@ -323,10 +403,6 @@ find "$incoming" -type f -exec chmod 0644 {} +
 chmod 0755 "$incoming/bin/server"
 mv -- "$incoming" "$final"
 
-old_current=
-if [[ -L $root/current || -e $root/current ]]; then
-    old_current=$(readlink -f "$root/current")
-fi
 temp_link="$root/.current.$release_id.$$"
 rm -f -- "$temp_link"
 ln -s "$final" "$temp_link"
@@ -352,10 +428,8 @@ health_ok() {
     [[ -n $wasm ]] || return 1
     headers=$(curl --noproxy '*' --fail --silent --show-error --head --max-time 3 "http://127.0.0.1:$app_port/$wasm") || return 1
     grep -qi '^content-type: application/wasm' <<<"$headers" || return 1
-    if [[ $public_url == https://* ]]; then
-        body=$(curl --noproxy '*' --resolve "$origin_host:443:127.0.0.1" --fail --silent --show-error --max-time 5 "$public_url/api/health" 2>/dev/null) || return 1
-        [[ $body == ok ]] || return 1
-    fi
+    body=$(curl --noproxy '*' --resolve "$origin_host:$origin_port:127.0.0.1" --fail --silent --show-error --max-time 5 "$public_url/api/health" 2>/dev/null) || return 1
+    [[ $body == ok ]] || return 1
 }
 
 healthy=0
@@ -386,10 +460,10 @@ if (( healthy == 0 )); then
     exit 1
 fi
 
-    if [[ -n $old_current && $old_current != "$final" && -d $old_current ]]; then
-        previous_link="$root/.previous.$release_id.$$"
-        rm -f -- "$previous_link"
-        ln -s "$old_current" "$previous_link"
+if [[ -n $old_current && $old_current != "$final" && -d $old_current ]]; then
+    previous_link="$root/.previous.$release_id.$$"
+    rm -f -- "$previous_link"
+    ln -s "$old_current" "$previous_link"
     mv -Tf -- "$previous_link" "$root/previous"
 fi
 
@@ -398,14 +472,19 @@ previous_target=
 if [[ -L $root/previous || -e $root/previous ]]; then
     previous_target=$(readlink -f "$root/previous")
 fi
+protected=1
+if [[ -n $previous_target && $previous_target != "$current_target" ]]; then
+    protected=2
+fi
+unprotected_limit=$((keep_releases - protected))
 kept=0
 while IFS= read -r candidate; do
     [[ -n $candidate ]] || continue
-    [[ $candidate == "$releases/"* ]] || continue
+    [[ $candidate == "$releases/"* && ${candidate#"$releases/"} != */* ]] || continue
     if [[ $candidate == "$current_target" || $candidate == "$previous_target" ]]; then
         continue
     fi
-    if (( kept < keep_releases )); then
+    if (( kept < unprotected_limit )); then
         kept=$((kept + 1))
         continue
     fi
@@ -444,14 +523,15 @@ deploy() {
 
     build_and_smoke_test
 
-    local timestamp revision suffix release_id
+    local timestamp revision nonce suffix release_id
     timestamp=$(date -u +%Y%m%dT%H%M%SZ)
     revision=$(git -C "$ROOT_DIR" rev-parse --short=12 HEAD 2>/dev/null || printf 'nogit')
+    printf -v nonce '%04x%04x' "$RANDOM" "$RANDOM"
     suffix=
     if [[ -n $(git -C "$ROOT_DIR" status --porcelain 2>/dev/null || true) ]]; then
         suffix=-dirty
     fi
-    release_id="$timestamp-$revision$suffix"
+    release_id="$timestamp-$revision-$nonce$suffix"
     [[ $release_id =~ ^[A-Za-z0-9._-]+$ ]] || die "unsafe generated release ID"
 
     local archive checksum archive_bytes remote_upload
@@ -463,12 +543,18 @@ deploy() {
 
     log "running remote preflight"
     remote_upload=$(remote_prepare_upload "$release_id" "$archive_bytes")
+    PENDING_REMOTE_RELEASE=$release_id
     log "uploading $release_id"
-    rsync -az --protect-args -e "$RSYNC_RSH" -- \
-        "$archive" "$checksum" "$DEPLOY_HOST:$remote_upload/"
+    if ! rsync -az --protect-args -e "$RSYNC_RSH" -- \
+        "$archive" "$checksum" "$DEPLOY_HOST:$remote_upload/"; then
+        remote_discard_upload "$release_id" || true
+        PENDING_REMOTE_RELEASE=
+        die "release upload failed"
+    fi
 
     log "activating $release_id"
     remote_activate "$release_id" "$(public_host)"
+    PENDING_REMOTE_RELEASE=
     public_diagnostic
     log "deployment complete: $release_id"
 }
@@ -486,6 +572,11 @@ set -Eeuo pipefail
 root=$1
 service=$2
 app_port=$3
+
+[[ $root =~ ^/opt/[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$ ]] || {
+    printf 'unsafe remote root: %s\n' "$root" >&2
+    exit 1
+}
 
 printf 'service=%s\n' "$(systemctl is-active "$service")"
 printf 'enabled=%s\n' "$(systemctl is-enabled "$service")"
@@ -513,7 +604,7 @@ rollback() {
     require_commands ssh
 
     ssh "${SSH_OPTS[@]}" "$DEPLOY_HOST" bash -s -- \
-        "$REMOTE_ROOT" "$SERVICE" "$APP_PORT" "$PUBLIC_URL" "$(public_host)" "$remote_requested" <<'REMOTE'
+        "$REMOTE_ROOT" "$SERVICE" "$APP_PORT" "$PUBLIC_URL" "$(public_host)" "$(public_port)" "$remote_requested" <<'REMOTE'
 set -Eeuo pipefail
 IFS=$'\n\t'
 
@@ -522,7 +613,13 @@ service=$2
 app_port=$3
 public_url=${4%/}
 origin_host=$5
-requested=$6
+origin_port=$6
+requested=$7
+
+[[ $root =~ ^/opt/[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$ ]] || {
+    printf 'unsafe remote root: %s\n' "$root" >&2
+    exit 1
+}
 if [[ $requested == - ]]; then
     requested=
 fi
@@ -539,6 +636,10 @@ flock -n 9 || {
     exit 1
 }
 old_current=$(readlink -f "$root/current")
+[[ -d $old_current && $old_current == "$releases/"* && ${old_current#"$releases/"} != */* ]] || {
+    printf 'active release is outside the releases directory\n' >&2
+    exit 1
+}
 if [[ -n $requested ]]; then
     target=$(readlink -f "$releases/$requested" 2>/dev/null || true)
 else
@@ -551,7 +652,7 @@ else
     fi
 fi
 
-[[ -n $target && -d $target && $target == "$releases/"* ]] || {
+[[ -n $target && -d $target && $target == "$releases/"* && ${target#"$releases/"} != */* ]] || {
     printf 'rollback target was not found\n' >&2
     exit 1
 }
@@ -575,7 +676,7 @@ if systemctl restart "$service"; then
         if systemctl is-active --quiet "$service" && \
             [[ $executable == "$(readlink -f "$root/current/bin/server")" ]] && \
             [[ $(curl --noproxy '*' --fail --silent --show-error --max-time 3 "http://127.0.0.1:$app_port/api/health" 2>/dev/null || true) == ok ]] && \
-            { [[ $public_url != https://* ]] || [[ $(curl --noproxy '*' --resolve "$origin_host:443:127.0.0.1" --fail --silent --show-error --max-time 5 "$public_url/api/health" 2>/dev/null || true) == ok ]]; }; then
+            [[ $(curl --noproxy '*' --resolve "$origin_host:$origin_port:127.0.0.1" --fail --silent --show-error --max-time 5 "$public_url/api/health" 2>/dev/null || true) == ok ]]; then
             healthy=1
             break
         fi
