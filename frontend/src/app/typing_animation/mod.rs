@@ -5,21 +5,43 @@ mod types;
 
 use leptos::prelude::*;
 use rand::RngExt;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
 
-use constants::{EXTRA_PARTICLES, HEIGHT, TARGET_TEXT, WIDTH, map_char, random_symbol};
+use constants::{
+    CHAR_ADVANCE, EXTRA_PARTICLES, HEIGHT, TARGET_TEXT, TEXT_CENTER_X, TEXT_LEFT, TEXT_Y, UNIT_EM,
+    WIDTH, map_char, random_symbol,
+};
 use physics::{
     update_connections, update_converge_phase, update_dissolve_phase, update_scatter_phase,
     update_stable_phase,
 };
 use types::{AnimationPhase, ColorScheme, Connection, Particle, ParticleType, StableSubPhase};
 
-/// Minimal requestAnimationFrame loop with delta time computation.
-/// Returns handle for cancellation. Automatically cleans up on drop.
+type AnimationFrameCallback = Closure<dyn FnMut(f64)>;
+type AnimationFrameCallbackHolder = Rc<RefCell<Option<AnimationFrameCallback>>>;
+
+fn schedule_animation_frame(
+    closure_holder: &RefCell<Option<AnimationFrameCallback>>,
+    handle: &Cell<Option<i32>>,
+) {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let callback = closure_holder.borrow();
+    let Some(callback) = callback.as_ref() else {
+        return;
+    };
+    if let Ok(id) = window.request_animation_frame(callback.as_ref().unchecked_ref()) {
+        handle.set(Some(id));
+    }
+}
+
+/// Minimal requestAnimationFrame loop with delta-time computation.
+/// The root component retains its callback for the lifetime of this single-page app.
 fn request_animation_frame_loop<F>(mut callback: F) -> Rc<Cell<Option<i32>>>
 where
     F: FnMut(f32) + 'static,
@@ -28,8 +50,7 @@ where
     let prev_timestamp = Rc::new(Cell::new(0.0_f64));
 
     // Self-referential closure pattern via Rc<RefCell>
-    let closure_holder: Rc<std::cell::RefCell<Option<Closure<dyn FnMut(f64)>>>> =
-        Rc::new(std::cell::RefCell::new(None));
+    let closure_holder: AnimationFrameCallbackHolder = Rc::new(RefCell::new(None));
 
     let closure_holder_clone = Rc::clone(&closure_holder);
     let handle_clone = Rc::clone(&handle);
@@ -39,8 +60,7 @@ where
         // Skip updates when tab is hidden (saves CPU/battery)
         let is_visible = web_sys::window()
             .and_then(|w| w.document())
-            .map(|d| d.visibility_state() == web_sys::VisibilityState::Visible)
-            .unwrap_or(true);
+            .is_none_or(|d| d.visibility_state() == web_sys::VisibilityState::Visible);
 
         let prev = prev_timestamp_clone.get();
 
@@ -58,28 +78,14 @@ where
 
         prev_timestamp_clone.set(if is_visible { timestamp } else { 0.0 });
 
-        if let Some(window) = web_sys::window() {
-            if let Some(ref closure) = *closure_holder_clone.borrow() {
-                if let Ok(id) = window.request_animation_frame(closure.as_ref().unchecked_ref()) {
-                    handle_clone.set(Some(id));
-                }
-            }
-        }
+        schedule_animation_frame(&closure_holder_clone, &handle_clone);
     }) as Box<dyn FnMut(f64)>);
 
     *closure_holder.borrow_mut() = Some(closure);
 
-    if let Some(window) = web_sys::window() {
-        if let Some(ref closure) = *closure_holder.borrow() {
-            if let Ok(id) = window.request_animation_frame(closure.as_ref().unchecked_ref()) {
-                handle.set(Some(id));
-            }
-        }
-    }
+    schedule_animation_frame(&closure_holder, &handle);
 
-    // Leak the closure to keep it alive (cleaned up via cancel_animation_frame)
     std::mem::forget(closure_holder);
-
     handle
 }
 
@@ -88,20 +94,21 @@ fn initialize_particles() -> Vec<Particle> {
     let mut particles = Vec::with_capacity(TARGET_TEXT.len() + EXTRA_PARTICLES);
 
     let char_count = TARGET_TEXT.chars().count();
-    let text_width = char_count as f32 * 20.0;
-    let text_start_x = (WIDTH - text_width) / 2.0 + 10.0;
-    let text_y = HEIGHT * 0.6;
+    let text_width = char_count as f32 * CHAR_ADVANCE;
+    let text_start_x = TEXT_LEFT;
+    let text_y = TEXT_Y;
 
     for (i, ch) in TARGET_TEXT.chars().enumerate() {
         particles.push(Particle {
             x: rng.random_range(0.0..WIDTH),
             y: rng.random_range(0.0..HEIGHT),
             z: rng.random_range(-30.0..30.0),
-            target_x: (i as f32).mul_add(20.0, text_start_x),
+            target_x: (i as f32).mul_add(CHAR_ADVANCE, text_start_x),
             target_y: text_y,
             target_z: 0.0,
             symbol: random_symbol(&mut rng),
             target_symbol: map_char(ch),
+            plain: ch,
             vx: rng.random_range(-2.5..2.5),
             vy: rng.random_range(-2.5..2.5),
             vz: rng.random_range(-1.5..1.5),
@@ -124,6 +131,7 @@ fn initialize_particles() -> Vec<Particle> {
             3 => ParticleType::Connector,
             _ => ParticleType::Swarm,
         };
+        let target_symbol = random_symbol(&mut rng);
         let life = match particle_type {
             ParticleType::Fragment | ParticleType::Connector => rng.random_range(2.0..5.0),
             _ => rng.random_range(4.0..8.0),
@@ -136,7 +144,8 @@ fn initialize_particles() -> Vec<Particle> {
             target_y: text_y + rng.random_range(-40.0..40.0),
             target_z: rng.random_range(-20.0..20.0),
             symbol: random_symbol(&mut rng),
-            target_symbol: random_symbol(&mut rng),
+            target_symbol,
+            plain: target_symbol,
             vx: rng.random_range(-3.5..3.5),
             vy: rng.random_range(-3.5..3.5),
             vz: rng.random_range(-2.0..2.0),
@@ -202,7 +211,7 @@ pub fn TypingAnimation() -> impl IntoView {
     let connections = RwSignal::new(particles.with_untracked(|p| initialize_connections(p)));
     let phase = RwSignal::new(AnimationPhase::initial());
     let progress = RwSignal::new(0.0f32);
-    let gravity_center = RwSignal::new((WIDTH / 2.0, HEIGHT / 2.0));
+    let gravity_center = RwSignal::new((TEXT_CENTER_X, TEXT_Y));
     let phase_advancing = RwSignal::new(false);
 
     Effect::new(move |_| {
@@ -245,7 +254,6 @@ pub fn TypingAnimation() -> impl IntoView {
             }
         });
 
-        // Handle kept alive - animation runs for component lifetime
         std::mem::forget(handle);
     });
 
@@ -254,8 +262,8 @@ pub fn TypingAnimation() -> impl IntoView {
             move || {
                 let mut rng = rand::rng();
                 gravity_center.set((
-                    WIDTH / 2.0 + rng.random_range(-30.0..30.0),
-                    HEIGHT / 2.0 + rng.random_range(-20.0..20.0),
+                    TEXT_CENTER_X + rng.random_range(-30.0..30.0),
+                    TEXT_Y + rng.random_range(-20.0..20.0),
                 ));
             },
             Duration::from_millis(2500),
@@ -265,8 +273,8 @@ pub fn TypingAnimation() -> impl IntoView {
     let scheme = ColorScheme::DEFAULT;
 
     view! {
-        <div class="transformium-field" style=format!("background-color: {}; transform-style: preserve-3d;", scheme.background)>
-            <svg class="connections-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; opacity: 0.7;">
+        <div class="animation-field" aria-hidden="true">
+            <svg class="connections-layer" viewBox=format!("0 0 {WIDTH} {HEIGHT}")>
                 {move || connections.with(|cs| particles.with(|ps| {
                     cs.iter()
                         .filter(|c| c.active && c.opacity > 0.01)
@@ -285,7 +293,7 @@ pub fn TypingAnimation() -> impl IntoView {
                         .collect_view()
                 }))}
             </svg>
-            <div class="transformium-particles">
+            <div class="animation-particles">
                 {move || {
                     let current_phase = phase.get();
                     particles.with(|ps| {
@@ -300,15 +308,18 @@ pub fn TypingAnimation() -> impl IntoView {
                                     _ => scheme.secondary,
                                 };
                                 let z_scale = (1.0 + p.z / 500.0).clamp(0.4, 2.5);
-                                let font_size = (14.0 * p.scale * z_scale).clamp(4.0, 28.0);
+                                // Text glyphs match the surrounding type; debris stays small.
+                                let size_factor = if p.is_text { 1.0 } else { 0.35 };
+                                let font_size = (size_factor * p.scale * z_scale).clamp(0.1, 1.6);
                                 let style = format!(
-                                    "position: absolute; left: {:.1}px; top: {:.1}px; opacity: {:.2}; z-index: {}; \
-                                     transform: translate3d(-50%, -50%, {:.1}px) scale({:.2}) rotate({:.1}deg); \
-                                     color: {}; font-size: {:.1}px; will-change: transform, opacity;",
-                                    p.x, p.y, p.opacity, z_index, p.z, 1.0, p.rotation, color, font_size
+                                    "left: {:.3}em; top: {:.3}em; opacity: {:.2}; z-index: {}; \
+                                     transform: translate3d(-50%, -50%, {:.1}px) rotate({:.1}deg); \
+                                     color: {}; font-size: {:.3}em;",
+                                    p.x * UNIT_EM / font_size, p.y * UNIT_EM / font_size,
+                                    p.opacity, z_index, p.z, p.rotation, color, font_size
                                 );
                                 let classes = if p.is_text && matches!(current_phase, AnimationPhase::Stable(s) if !matches!(s, StableSubPhase::PreDissolve | StableSubPhase::Shimmer)) {
-                                    "particle metallic-glow"
+                                    "particle settled"
                                 } else {
                                     "particle"
                                 };

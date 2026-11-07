@@ -1,16 +1,16 @@
-//! servant-rs backend for unwrap.rs.
+//! Servant-rs backend for unwrap.rs.
 //!
 //! One typed [`servant`] API description drives the whole edge:
-//! - `GET /api/health`        — a `PlainText` liveness probe,
-//! - `GET /api/social-links`  — the social links as `JSON`,
-//! - everything else          — a `Raw` catch-all that serves the Trunk-built
+//! - `GET /api/health` — a `PlainText` liveness probe,
+//! - `GET /api/social-links` — the social links as `JSON`,
+//! - everything else — a `Raw` catch-all that serves the Trunk-built
 //!   frontend from `dist/` and returns a real 404 for missing files.
 //!
 //! The same description is consumed by `servant_server::serve`, so routing and
 //! the handler shapes cannot drift apart.
 
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use bytes::Bytes;
@@ -34,6 +34,8 @@ struct SocialLink {
     label: &'static str,
 }
 
+// This data intentionally mirrors the frontend at the HTTP API boundary.
+//noinspection DuplicatedCode
 const SOCIAL_LINKS: &[SocialLink] = &[
     SocialLink {
         url: "https://github.com/coleleavitt",
@@ -82,6 +84,7 @@ fn content_type_for(name: &str) -> &'static str {
         Some("woff") => "font/woff",
         Some("ttf") => "font/ttf",
         Some("txt") => "text/plain; charset=utf-8",
+        Some("asc") => "application/pgp-keys",
         _ => "application/octet-stream",
     }
 }
@@ -107,31 +110,50 @@ fn not_found() -> Response<ResponseBody> {
     )
 }
 
-/// `Raw` catch-all: serve a file from `dist/` or return a real 404.
-async fn serve_static(req: RawRequest, dist: Arc<PathBuf>) -> Response<ResponseBody> {
-    let tail = req.tail();
-
-    // Reject path traversal before touching the filesystem.
-    if tail
+/// Resolve a request tail to a file path under `dist`.
+///
+/// A single trailing empty segment (a trailing slash) selects a directory.
+/// Every other empty segment, `.`, `..`, and slash-bearing segment is
+/// rejected, so path traversal never reaches the filesystem. A resolved
+/// directory serves its `index.html`.
+fn resolve_path(dist: &Path, tail: &[String]) -> Option<PathBuf> {
+    let segs: &[String] = if tail.last().is_some_and(String::is_empty) {
+        &tail[..tail.len() - 1]
+    } else {
+        tail
+    };
+    if segs
         .iter()
         .any(|seg| seg.is_empty() || seg == "." || seg == ".." || seg.contains(['/', '\\']))
     {
-        return not_found();
+        return None;
     }
 
-    let mut path = dist.as_ref().clone();
-    if tail.is_empty() {
+    let mut path = dist.to_path_buf();
+    if segs.is_empty() {
         path.push("index.html");
     } else {
-        for seg in tail {
+        for seg in segs {
             path.push(seg);
         }
+        if path.is_dir() {
+            path.push("index.html");
+        }
     }
+    Some(path)
+}
 
-    let name = tail.last().map_or("index.html", String::as_str);
+/// `Raw` catch-all: serve a file from `dist/` or return a real 404.
+async fn serve_static(req: RawRequest, dist: Arc<PathBuf>) -> Response<ResponseBody> {
+    let Some(path) = resolve_path(dist.as_ref(), req.tail()) else {
+        return not_found();
+    };
+    let Some(name) = path.file_name().map(|n| n.to_string_lossy().into_owned()) else {
+        return not_found();
+    };
     tokio::fs::read(&path).await.map_or_else(
         |_| not_found(),
-        |bytes| respond(StatusCode::OK, content_type_for(name), bytes),
+        |bytes| respond(StatusCode::OK, content_type_for(&name), bytes),
     )
 }
 
@@ -169,6 +191,89 @@ async fn main() -> std::io::Result<()> {
 
     let addr = bind_addr();
     let listener = TcpListener::bind(addr).await?;
-    println!("unwrap.rs server listening on http://{addr}");
+    println!("unwrap.rs server listening on {addr}");
     serve_listener(listener, service).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn temp_dist(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("unwrap-rs-test-{tag}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("writing").join("some-post")).expect("mkdir");
+        fs::write(dir.join("robots.txt"), "User-agent: *\n").expect("write");
+        fs::write(
+            dir.join("writing").join("some-post").join("index.html"),
+            "<html>",
+        )
+        .expect("write");
+        dir
+    }
+
+    #[test]
+    fn content_types_cover_served_assets() {
+        assert_eq!(content_type_for("JetBrainsMono-latin.woff2"), "font/woff2");
+        assert_eq!(content_type_for("app_bg.wasm"), "application/wasm");
+        assert_eq!(
+            content_type_for("feed.xml"),
+            "application/xml; charset=utf-8"
+        );
+        assert_eq!(content_type_for("pgp.asc"), "application/pgp-keys");
+        assert_eq!(content_type_for("no-extension"), "application/octet-stream");
+    }
+
+    #[test]
+    fn empty_tail_serves_index() {
+        let dist = temp_dist("empty");
+        assert_eq!(resolve_path(&dist, &[]), Some(dist.join("index.html")));
+        let _ = fs::remove_dir_all(&dist);
+    }
+
+    #[test]
+    fn trailing_slash_resolves_directory_index() {
+        let dist = temp_dist("slash");
+        let tail = vec!["writing".to_string(), String::new()];
+        assert_eq!(
+            resolve_path(&dist, &tail),
+            Some(dist.join("writing").join("index.html"))
+        );
+        let _ = fs::remove_dir_all(&dist);
+    }
+
+    #[test]
+    fn nested_post_resolves_its_index() {
+        let dist = temp_dist("nested");
+        let tail = vec!["writing".to_string(), "some-post".to_string()];
+        assert_eq!(
+            resolve_path(&dist, &tail),
+            Some(dist.join("writing").join("some-post").join("index.html"))
+        );
+        let _ = fs::remove_dir_all(&dist);
+    }
+
+    #[test]
+    fn plain_file_is_served_directly() {
+        let dist = temp_dist("file");
+        let tail = vec!["robots.txt".to_string()];
+        assert_eq!(resolve_path(&dist, &tail), Some(dist.join("robots.txt")));
+        let _ = fs::remove_dir_all(&dist);
+    }
+
+    #[test]
+    fn traversal_segments_are_rejected() {
+        let dist = temp_dist("traversal");
+        for tail in [
+            vec!["..".to_string()],
+            vec![".".to_string()],
+            vec!["a/../b".to_string()],
+            vec![String::new(), String::new()],
+            vec!["a".to_string(), String::new(), "b".to_string()],
+        ] {
+            assert_eq!(resolve_path(&dist, &tail), None, "rejected: {tail:?}");
+        }
+        let _ = fs::remove_dir_all(&dist);
+    }
 }

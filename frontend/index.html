@@ -7,7 +7,7 @@
   <meta name="author" content="Cole Leavitt" />
   <meta name="robots" content="max-image-preview:large" />
   <link rel="canonical" href="https://unwrap.rs/" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <meta property="og:type" content="profile" />
   <meta property="og:title" content="Cole Leavitt — Principal Security Engineer" />
@@ -19,7 +19,7 @@
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Cole Leavitt — Principal Security Engineer and Security Researcher" />
+  <meta property="og:image:alt" content="Cole Leavitt — Principal Security Engineer" />
   <meta property="profile:first_name" content="Cole" />
   <meta property="profile:last_name" content="Leavitt" />
 
@@ -27,7 +27,7 @@
   <meta name="twitter:title" content="Cole Leavitt — Principal Security Engineer" />
   <meta name="twitter:description" content="Principal security engineer and security researcher focused on Rust, systems security, and vulnerability research." />
   <meta name="twitter:image" content="https://unwrap.rs/social-card.png" />
-  <meta name="twitter:image:alt" content="Cole Leavitt — Principal Security Engineer and Security Researcher" />
+  <meta name="twitter:image:alt" content="Cole Leavitt — Principal Security Engineer" />
 
   <script type="application/ld+json">
     {
@@ -52,7 +52,7 @@
             "name": "Cole Leavitt",
             "url": "https://unwrap.rs/",
             "jobTitle": "Principal Security Engineer",
-            "description": "Principal security engineer and security researcher focused on Rust, systems security, and vulnerability research.",
+            "description": "Security researcher focused on Rust, systems security, and vulnerability research.",
             "sameAs": [
               "https://github.com/coleleavitt",
               "https://www.linkedin.com/in/coleleavitt/"
@@ -64,146 +64,84 @@
   </script>
 
   <link data-trunk rel="tailwind-css" href="index.css" />
-  <link data-trunk rel="copy-dir" href="src/app/social_links/icons"/>
+  <link data-trunk rel="copy-dir" href="fonts" />
+  <link data-trunk rel="copy-dir" href="src/app/social_links/icons" />
   <link data-trunk rel="copy-file" href="favicon.svg" />
   <link data-trunk rel="copy-file" href="social-card.png" />
   <link data-trunk rel="copy-file" href="robots.txt" />
   <link data-trunk rel="copy-file" href="sitemap.xml" />
+  <link data-trunk rel="copy-file" href="pgp.asc" />
+  <link data-trunk rel="copy-dir" href=".well-known" />
+  <link rel="preload" href="/fonts/JetBrainsMono-latin.woff2" as="font" type="font/woff2" crossorigin />
 
-  <!-- JPL-Certified Font Stack -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-  <!-- Radiation-hardened viewport settings - improved for iOS -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0a0e14">
-
-  <!-- iOS-specific safety protocols -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-  <!-- Triple-redundant viewport height calculation -->
-  <script>
-    // JPL-compliant viewport height calculation with bounded execution
-    function setVH() {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    }
-
-    // Triple execution for fault tolerance
-    setVH();
-
-    // Event-based recalculation with bounded execution guarantees
-    window.addEventListener('resize', setVH);
-    window.addEventListener('orientationchange', setVH);
-    document.addEventListener('DOMContentLoaded', setVH);
-
-    // Particle system that reacts to mouse/touch movement
-    document.addEventListener('DOMContentLoaded', () => {
-      const container = document.querySelector('.radiation-hardened-container');
-      if (!container) return; // Exit early if container not found
-
-      // Create data points container
-      const dataPointsContainer = document.createElement('div');
-      dataPointsContainer.className = 'data-points';
-
-      // Find transformium container and append data points
-      const transformiumContainer = document.querySelector('.transformium-container');
-      if (transformiumContainer) {
-        transformiumContainer.appendChild(dataPointsContainer);
-      }
-
-      // Create interactive particles container
-      const particlesContainer = document.createElement('div');
-      particlesContainer.className = 'interactive-particles';
-      container.appendChild(particlesContainer);
-
-      // Create particles
-      for (let i = 0; i < 15; i++) {
-        createParticle(particlesContainer);
-      }
-
-      // Mouse/touch tracking
-      container.addEventListener('mousemove', handleMouseMove);
-      container.addEventListener('touchmove', handleTouchMove, { passive: true });
-
-      // Handle device orientation change
-      window.addEventListener('orientationchange', () => {
-        document.body.classList.add('orientation-changing');
-        setTimeout(() => {
-          document.body.classList.remove('orientation-changing');
-        }, 500);
-      });
-    });
-
-    function createParticle(container) {
-      const particle = document.createElement('div');
-      particle.className = 'particle text-particle';
-      particle.style.opacity = '0.2';
-      particle.style.color = 'var(--jpl-accent-primary)';
-      particle.style.fontSize = `${Math.random() * 10 + 6}px`;
-      particle.textContent = Math.random() > 0.5 ? '◉' : '◆';
-      container.appendChild(particle);
-
-      // Position randomly
-      resetParticle(particle);
-
-      return particle;
-    }
-
-    function resetParticle(particle) {
-      const x = Math.random() * 100;
-      const y = Math.random() * 100;
-      particle.style.left = `${x}%`;
-      particle.style.top = `${y}%`;
-      particle.style.transform = `translateZ(${Math.random() * 100}px)`;
-    }
-
-    function handleMouseMove(e) {
-      const particles = document.querySelectorAll('.interactive-particles .particle');
-      const mouseX = e.clientX;
-      const mouseY = e.clientY;
-
-      particles.forEach(particle => {
-        const rect = particle.getBoundingClientRect();
-        const particleX = rect.left + rect.width / 2;
-        const particleY = rect.top + rect.height / 2;
-
-        const distX = mouseX - particleX;
-        const distY = mouseY - particleY;
-        const distance = Math.sqrt(distX * distX + distY * distY);
-
-        if (distance < 100) {
-          const angle = Math.atan2(distY, distX);
-          const force = (100 - distance) / 10;
-
-          const moveX = Math.cos(angle) * force * -1;
-          const moveY = Math.sin(angle) * force * -1;
-
-          particle.style.transform = `translate(${moveX}px, ${moveY}px) translateZ(${Math.random() * 50}px)`;
-          particle.style.opacity = '0.8';
-          particle.style.transition = 'transform 0.2s cubic-bezier(0.165, 0.84, 0.44, 1)';
-        } else {
-          particle.style.transition = 'transform 1s ease-out, opacity 1s ease-out';
-          particle.style.transform = 'translate(0, 0) translateZ(0)';
-          particle.style.opacity = '0.2';
-        }
-      });
-    }
-
-    function handleTouchMove(e) {
-      const touch = e.touches[0];
-      if (touch) {
-        handleMouseMove({
-          clientX: touch.clientX,
-          clientY: touch.clientY
-        });
-      }
-    }
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e14" />
 </head>
 <body>
-<div id="app"></div>
+  <main class="page">
+    <header class="intro">
+      <h1 class="name">Cole Leavitt</h1>
+      <p class="statement">I build and break systems software in <span class="accent">Rust</span>.</p>
+      <nav class="links" aria-label="Elsewhere">
+        <a href="/writing/">Writing</a>
+        <a href="https://github.com/coleleavitt" rel="noopener noreferrer">GitHub</a>
+        <a href="https://www.linkedin.com/in/coleleavitt/" rel="noopener noreferrer">LinkedIn</a>
+        <a href="mailto:cole@unwrap.rs">Email</a>
+      </nav>
+      <p class="pgp">PGP <a href="/pgp.asc" title="OpenPGP key"><span>DEC2 3202 3B77 3F66 98EA</span> <span>54F1 1DFB 3167 910E 6193</span></a></p>
+    </header>
+
+    <div id="animation-mount" class="hero" role="img" aria-label="Result&lt;T, E&gt;.unwrap()">
+      <span class="hero-base" aria-hidden="true">Result&lt;T, E&gt;</span><span class="hero-static" aria-hidden="true">.unwrap()</span>
+    </div>
+
+    <section class="section" aria-labelledby="research-heading">
+      <h2 id="research-heading" class="section-label">Research</h2>
+      <ul class="entries">
+        <li>
+          <a href="https://github.com/coleleavitt/AAMVA-PDF417-Vulnerability-Research"><span class="entry-name">AAMVA PDF417</span><span class="entry-desc">ID scanners accept spoofed driver's license barcodes</span><span class="entry-meta">2025</span></a>
+          <ul class="entry-refs" aria-label="CVEs">
+            <li><a href="https://www.cve.org/CVERecord?id=CVE-2025-31337">CVE-2025-31337</a> IDScan.net</li>
+            <li><a href="https://www.cve.org/CVERecord?id=CVE-2025-31336">CVE-2025-31336</a> TokenWorks</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="kernel-heading">
+      <h2 id="kernel-heading" class="section-label">Linux kernel</h2>
+      <ul class="entries">
+        <li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=92cee08dc4f00e77fd1317e4343c5d458b0abab7"><span class="entry-name">iwlwifi</span><span class="entry-desc">Fix TSO segmentation explosion when A-MSDU is disabled</span><span class="entry-meta">Linux 7.1</span></a></li>
+        <li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=2ddb69f686ef7a621645e97fc7329c50edf5d0e5"><span class="entry-name">pstore/ram</span><span class="entry-desc">Fix a resource leak when ioremap() fails</span><span class="entry-meta">Linux 7.1</span></a></li>
+        <li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=2c96956fe764f8224f9ec93b2a9160a578949a7a"><span class="entry-name">soundwire</span><span class="entry-desc">Demote expected UNATTACHED state warnings to debug</span><span class="entry-meta">Linux 7.1</span></a></li>
+        <li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=390caeed0897fcac75f3c414dbdd85d593183d9c"><span class="entry-name">ASoC cs42l43</span><span class="entry-desc">Enable the headphone pin for the LINEOUT jack type</span><span class="entry-meta">Linux 6.19</span></a></li>
+        <li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=122439234f6ae2583a3701d7619f9a8242748547"><span class="entry-name">i915</span><span class="entry-desc">Reported the CX0 PHY turnaround timing bug Intel fixed</span><span class="entry-meta">Linux 7.1</span></a></li>
+      </ul>
+      <p class="section-more"><a href="https://lore.kernel.org/all/?q=f%3Acole%40unwrap.rs">All patches and reviews on lore</a></p>
+    </section>
+
+    <section class="section" aria-labelledby="projects-heading">
+      <h2 id="projects-heading" class="section-label">Projects</h2>
+      <ul class="entries">
+        <li><a href="https://github.com/coleleavitt/unlace"><span class="entry-name">unlace</span><span class="entry-desc">Open-source decompiler in Rust with Mach-O, Objective-C and Swift support</span></a></li>
+        <li><a href="https://github.com/coleleavitt/ida-mcp-server"><span class="entry-name">ida-mcp-server</span><span class="entry-desc">IDA Pro plugin exposing 170+ analysis tools to coding agents over MCP</span></a></li>
+        <li><a href="https://github.com/coleleavitt/jsbeautify"><span class="entry-name">jsbeautify</span><span class="entry-desc">JavaScript beautifier, deobfuscator and bundle unpacker built on oxc</span></a></li>
+        <li><a href="https://github.com/coleleavitt/servant-rs"><span class="entry-name">servant-rs</span><span class="entry-desc">Rust port of Haskell Servant: one typed API drives server, client and docs</span></a></li>
+      </ul>
+    </section>
+    <section class="section" aria-labelledby="upstream-heading">
+      <h2 id="upstream-heading" class="section-label">Upstream</h2>
+      <ul class="entries">
+        <li><a href="https://github.com/Piebald-AI/tweakcc/pulls?q=is%3Apr+author%3Acoleleavitt+is%3Amerged"><span class="entry-name">tweakcc</span><span class="entry-desc">Six merged PRs keeping patches working across Claude Code native builds</span></a></li>
+        <li><a href="https://github.com/webrtc-rs/webrtc/pull/908"><span class="entry-name">webrtc-rs</span><span class="entry-desc">Advertise and honour the data channel receive max-message-size</span></a></li>
+        <li><a href="https://github.com/oven-sh/bun/pull/29596"><span class="entry-name">bun</span><span class="entry-desc">Strip .eh_frame_hdr alongside .eh_frame in Linux release binaries</span></a></li>
+        <li><a href="https://github.com/Smithay/smithay/pull/1923"><span class="entry-name">smithay</span><span class="entry-desc">Re-emit Connected when a connected DRM connector's modes change</span></a></li>
+        <li><a href="https://github.com/oxc-project/oxc/pull/18010"><span class="entry-name">oxc</span><span class="entry-desc">Add into_state and into_state_and_scoping to ReusableTraverseCtx</span></a></li>
+        <li><a href="https://github.com/surrealdb/surrealdb/pull/6748"><span class="entry-name">surrealdb</span><span class="entry-desc">Preserve extra fields in INSERT RELATION with a table target</span></a></li>
+        <li><a href="https://github.com/niri-wm/niri/pull/1232"><span class="entry-name">niri</span><span class="entry-desc">Wait for GPU rendering to finish before sending frames to PipeWire</span></a></li>
+      </ul>
+    </section>
+    <!-- sitegen:latest -->
+  </main>
 </body>
 </html>

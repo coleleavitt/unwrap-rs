@@ -8,9 +8,9 @@ pub struct ColorScheme {
 
 impl ColorScheme {
     pub const DEFAULT: Self = Self {
-        primary: "#00ff88",
-        secondary: "#0088ff",
-        accent: "#ff00ff",
+        primary: "#66d9ef",
+        secondary: "#3d5875",
+        accent: "#c4f1fa",
         background: "transparent",
     };
 }
@@ -42,7 +42,10 @@ pub struct Particle {
     pub target_y: f32,
     pub target_z: f32,
     pub symbol: char,
+    /// Cipher-alphabet glyph shown while the text converges.
     pub target_symbol: char,
+    /// The readable character the text settles on once stable.
+    pub plain: char,
     pub vx: f32,
     pub vy: f32,
     pub vz: f32,

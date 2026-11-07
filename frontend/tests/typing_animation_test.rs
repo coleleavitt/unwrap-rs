@@ -54,7 +54,8 @@ fn test_option_timeout_replacement_cancels_previous() {
     });
 
     let mut holder: Option<Timeout> = Some(first_timeout);
-    holder = Some(Timeout::new(10, || {}));
+    let replaced = holder.replace(Timeout::new(10, || {}));
+    drop(replaced);
     drop(holder);
 
     assert!(

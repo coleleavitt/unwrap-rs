@@ -1,0 +1,17 @@
+[package]
+name = "sitegen"
+version = "0.1.0"
+edition.workspace = true
+rust-version = "1.88"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+# Build-time static page generator for /writing/. Not part of the shipped server.
+[dependencies]
+# rust-lang maintained CommonMark parser (same one rustdoc uses); build tool only
+pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
+
+[lints]
+workspace = true

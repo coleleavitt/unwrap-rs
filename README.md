@@ -13,7 +13,7 @@ The frontend includes a phase-based `Result<T, E>.unwrap()` particle animation, 
 
 ## Development
 
-Install the required targets and Trunk once:
+Install Trunk and the required Rust targets once:
 
 ```bash
 rustup target add wasm32-unknown-unknown x86_64-unknown-linux-musl

@@ -9,3 +9,5 @@
 .codegraph/
 .playwright-mcp/
 .impeccable/
+/MEMORY.md
+/CLAUDE.local.md
