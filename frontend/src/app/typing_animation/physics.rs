@@ -1,6 +1,6 @@
 use rand::{RngExt, rngs::ThreadRng};
 
-use super::constants::{HEIGHT, WIDTH, random_symbol};
+use super::constants::{TEXT_CENTER_X, TEXT_Y, random_symbol};
 use super::types::{
     AnimationPhase, Connection, ConvergeSubPhase, DissolveSubPhase, Particle, ParticleType,
     ScatterSubPhase, StableSubPhase,
@@ -114,8 +114,8 @@ pub fn update_scatter_phase(
                         p.symbol = p.target_symbol;
                     }
                 } else {
-                    let text_center_x = WIDTH / 2.0;
-                    let text_center_y = HEIGHT * 0.6;
+                    let text_center_x = TEXT_CENTER_X;
+                    let text_center_y = TEXT_Y;
                     let dx_text = text_center_x - p.x;
                     let dy_text = text_center_y - p.y;
                     let dx_grav = gravity_center.0 - p.x;
@@ -213,8 +213,8 @@ pub fn update_converge_phase(
         } else {
             match p.kind {
                 ParticleType::Orbiter => {
-                    let text_center_x = WIDTH / 2.0;
-                    let text_center_y = HEIGHT * 0.6;
+                    let text_center_x = TEXT_CENTER_X;
+                    let text_center_y = TEXT_Y;
                     let angle = p.energy.mul_add(0.3, 0.5) * p.age;
                     let radius_base = (p.target_x % 30.0) + 40.0;
                     let radius_variation = (p.age * 0.8).sin() * 15.0 * p.energy;
@@ -284,7 +284,7 @@ pub fn update_stable_phase(
         p.z = (p.vz * dt).mul_add(60.0, p.z);
 
         if p.is_text {
-            p.symbol = p.target_symbol;
+            p.symbol = p.plain;
             p.opacity = 1.0;
             let base_x = p.target_x;
             let base_y = p.target_y;
@@ -324,7 +324,7 @@ pub fn update_stable_phase(
                     if rng.random_bool(0.05) {
                         p.symbol = random_symbol(rng);
                     } else {
-                        p.symbol = p.target_symbol;
+                        p.symbol = p.plain;
                     }
                     p.x = rng.random_range(-0.2..0.2) + base_x;
                     p.y = rng.random_range(-0.2..0.2) + base_y;
@@ -341,7 +341,7 @@ pub fn update_stable_phase(
                     if rng.random_bool(0.03) {
                         p.symbol = random_symbol(rng);
                     } else {
-                        p.symbol = p.target_symbol;
+                        p.symbol = p.plain;
                     }
                     p.scale = rng.random_range(-0.05..0.05) + 1.0;
                     p.opacity = 1.0 - rng.random_range(0.0..0.1);

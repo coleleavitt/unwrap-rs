@@ -1,9 +1,22 @@
 use rand::{Rng, RngExt};
 
-pub const WIDTH: f32 = 300.0;
-pub const HEIGHT: f32 = 150.0;
 pub const EXTRA_PARTICLES: usize = 80;
 pub const TARGET_TEXT: &str = ".unwrap()";
+
+/// Layout units per character. Particles render at `UNIT_EM` em per unit, so
+/// one advance equals the site font's 0.6em glyph width and `.unwrap()` sets flush
+/// against the static `Result<T, E>` at any font size.
+pub const CHAR_ADVANCE: f32 = 20.0;
+pub const UNIT_EM: f32 = 0.6 / CHAR_ADVANCE;
+
+/// Field size in layout units: the resolved text plus one advance of slack.
+pub const WIDTH: f32 = (TARGET_TEXT.len() + 1) as f32 * CHAR_ADVANCE;
+pub const HEIGHT: f32 = 100.0;
+
+/// Center of the first glyph, so the leading `.` touches the preceding `>`.
+pub const TEXT_LEFT: f32 = CHAR_ADVANCE / 2.0;
+pub const TEXT_Y: f32 = HEIGHT / 2.0;
+pub const TEXT_CENTER_X: f32 = TEXT_LEFT + (TARGET_TEXT.len() - 1) as f32 * CHAR_ADVANCE / 2.0;
 
 const SYMBOL_CHARS: &str = "⏃ᗷᑕᗞ⟊⎎Ꮆ⋔⟙⟗Ꮶ⅃⏁ᑎ〇℘Ϙ尺⟅ナ⋒٧山〤Ꭹㄗค♭ᑢↁ⋿ℱᎶЂ|ן⊗≠ፐ∪∨พу⊼⋕⦿|ᒿ≡⫓⫔⏀⫛∞ⴤ•⦑⦒⎼⊕⧠";
 

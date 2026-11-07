@@ -1,14 +1,12 @@
-use super::types::{
-    AnimationPhase, ConvergeSubPhase, DissolveSubPhase, ScatterSubPhase, StableSubPhase,
-};
+use super::types::{AnimationPhase, ScatterSubPhase};
 
 impl AnimationPhase {
     pub const fn next(self) -> Option<Self> {
+        use super::types::ConvergeSubPhase::*;
+        use super::types::DissolveSubPhase::*;
+        use super::types::StableSubPhase::*;
         use AnimationPhase::*;
-        use ConvergeSubPhase::*;
-        use DissolveSubPhase::*;
         use ScatterSubPhase::*;
-        use StableSubPhase::*;
 
         match self {
             Scatter(Initial) => Some(Scatter(Expansion)),
@@ -35,11 +33,11 @@ impl AnimationPhase {
     }
 
     pub const fn duration(self) -> f32 {
+        use super::types::ConvergeSubPhase::*;
+        use super::types::DissolveSubPhase::*;
+        use super::types::StableSubPhase::*;
         use AnimationPhase::*;
-        use ConvergeSubPhase::*;
-        use DissolveSubPhase::*;
         use ScatterSubPhase::*;
-        use StableSubPhase::*;
 
         match self {
             Scatter(Initial) => 0.6,
@@ -52,10 +50,10 @@ impl AnimationPhase {
             Converge(Refinement) => 1.8,
             Converge(Solidification) => 2.2,
 
-            Stable(Pulse) => 0.6,
-            Stable(Orbit) => 0.6,
-            Stable(Ripple) => 0.6,
-            Stable(Shimmer) => 0.6,
+            Stable(Pulse) => 1.6,
+            Stable(Orbit) => 1.6,
+            Stable(Ripple) => 1.2,
+            Stable(Shimmer) => 0.8,
             Stable(PreDissolve) => 1.0,
 
             Dissolve(Fracture) => 0.5,
