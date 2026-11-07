@@ -21,7 +21,7 @@ The repo is a Cargo workspace (edition 2024) with three crates (`frontend`, `ser
 |---|---|---|
 | Page content | `frontend/index.html` | Static homepage HTML: name, sentence, link row, Work list, the `<!-- sitegen:latest -->` marker |
 | Animation | `frontend/src/app/typing_animation/`, `frontend/src/main.rs` | The particle animation, mounted into `#animation-mount` (skipped under reduced motion) |
-| Writing | `content/writing/*.md`, `sitegen/` | Markdown posts rendered to `dist/writing/`, `feed.xml`, `sitemap.xml`, and the homepage's latest-posts section (skips posts the homepage already links to) |
+| Writing | `content/writing/*.md`, `sitegen/` | Markdown posts (` ```mermaid ` fences become inline SVG) rendered to `dist/writing/`, `feed.xml`, `sitemap.xml`, and the homepage's latest-posts section (skips posts the homepage already links to) |
 | Document and SEO | `frontend/index.html` head, `robots.txt`, `social-card.png`, `assets/social-card.svg`, `favicon.svg` (plus `favicon.ico` and `apple-touch-icon.png`, rendered from it) | `<title>`, Open Graph, JSON-LD, canonical URL, Trunk asset directives |
 | Keys and disclosure | `frontend/pgp.asc`, `frontend/.well-known/` (`security.txt`, `openpgpkey/` WKD) | Cole's OpenPGP keys (`DEC2 3202 3B77…6193` primary, `2EFA…3402` older, cross-signed), RFC 9116 contact. Re-export both and the WKD file (`gpg --list-keys --with-wkd-hash`) when a key changes; renew `Expires` in `security.txt` yearly |
 | Styling | `frontend/index.css`, `frontend/tailwind.config.js`, `frontend/fonts/` | One stylesheet for every page; self-hosted JetBrains Mono (Latin subset, OFL) |
@@ -44,6 +44,7 @@ Composition rules:
 - The server is not a Leptos server. It serves `DIST_DIR` and two typed endpoints. Add endpoints to the single `servant` API description, not as side routes.
 - Every page shares one header (name, sentence, links, PGP line). It lives in `frontend/index.html` and, with the name as a home link, in `SITE_HEADER` in `sitegen/src/main.rs`; keep both in step. The GitHub/LinkedIn/Email links also appear in `SOCIAL_LINKS` in `server/src/main.rs` (the API; its `icon_path`s point at `src/app/social_links/icons/`, still copied by Trunk). Change them together.
 - The server depends on the sibling checkout `../servant-rs` through path dependencies. That checkout must exist to build the server.
+- `sitegen` depends on the sibling checkout `../mmd-svg` (Cole's crate, `coleleavitt/mmd-svg`): ` ```mermaid ` flowchart fences in posts render to inline SVG at build time, with no client JS. A diagram that fails to parse fails the build. Fix layout problems in `mmd-svg`, not in the site.
 
 ## Scope Boundaries
 
@@ -61,7 +62,7 @@ Do not add, unless Cole asks:
 - Production nginx (`/etc/nginx/sites-enabled/unwrap.rs` on `linode`, not in this repo) proxies everything to the app except `/dori/`. It adds only HSTS and `X-Frame-Options`; every other security header comes from the app, so do not add duplicates in nginx. The old `/.well-known` and `/proof` proxy to a Nebula peer was removed on 2026-11-07 (backups in `/root/unwrap.rs.nginx.bak-*`). TLS renews by DNS-01 through Cloudflare.
 - Cloudflare injects its Web Analytics beacon; the CSP blocks it. Turn it off in the Cloudflare dashboard rather than allowing it.
 - Layout: one left-aligned column (`--column: 56rem`) shared by the homepage and writing pages. One accent (`--accent: #dd68ff`).
-- One post: `content/writing/aamva-pdf417.md` (the AAMVA CVEs; facts only from the public research repo). `post-template.md` is a draft (`draft: true`).
+- Posts: `aamva-pdf417.md` (the AAMVA CVEs; facts only from the public research repo), `thunderbolt-resume-race.md` (facts from the posted patches), `linux-hello-face-unlock.md`, `xtensa-decoder-apartment-wifi.md` (the vendor firmware finding stays out until disclosed). `post-template.md` is a draft (`draft: true`). Posts use the technical write-up style, not a casual story voice.
 - Unit tests: `server` (path resolution, content types) and `sitegen` (frontmatter, escaping, dates, feed/sitemap, homepage injection). `frontend/tests/typing_animation_test.rs` only runs on `wasm32` in a browser.
 
 ## Working Rules
