@@ -14,7 +14,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use bytes::Bytes;
-use http::header::CONTENT_TYPE;
+use http::header::{
+    ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_SECURITY_POLICY, CONTENT_TYPE, REFERRER_POLICY,
+    X_CONTENT_TYPE_OPTIONS,
+};
 use http::{HeaderValue, Response, StatusCode};
 use serde::Serialize;
 use servant::prelude::*;
@@ -89,8 +92,71 @@ fn content_type_for(name: &str) -> &'static str {
     }
 }
 
-/// Build a buffered response with a fixed content type.
+/// Browser features the site never uses, all switched off.
+const PERMISSIONS_POLICY: &str = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), \
+     magnetometer=(), microphone=(), payment=(), usb=()";
+
+/// The Content-Security-Policy for the built site.
+///
+/// Scripts are limited to same-origin files plus the inline loader Trunk
+/// writes into `index.html`, allowed by its SHA-256 hash; that script changes
+/// with every build, so the hash is taken from the built page at startup.
+/// WebAssembly needs `'wasm-unsafe-eval'` to compile. Styles allow inline
+/// attributes because the animation positions each particle with one.
+fn content_security_policy(index_html: &str) -> String {
+    use base64::Engine as _;
+    use sha2::Digest as _;
+
+    let mut script_src = String::from("'self' 'wasm-unsafe-eval'");
+    for script in inline_scripts(index_html) {
+        let hash = base64::engine::general_purpose::STANDARD.encode(sha2::Sha256::digest(script));
+        script_src.push_str(" 'sha256-");
+        script_src.push_str(&hash);
+        script_src.push('\'');
+    }
+    format!(
+        "default-src 'none'; script-src {script_src}; style-src 'self' 'unsafe-inline'; \
+         img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; \
+         base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    )
+}
+
+/// Bodies of the inline `<script>` elements a browser executes: no `src`,
+/// and no data type such as `application/ld+json`.
+fn inline_scripts(html: &str) -> Vec<&str> {
+    let mut scripts = Vec::new();
+    let mut rest = html;
+    while let Some(start) = rest.find("<script") {
+        let after = &rest[start..];
+        let Some(open_end) = after.find('>') else {
+            break;
+        };
+        let attrs = &after[..open_end];
+        let body_start = open_end + 1;
+        let Some(close) = after[body_start..].find("</script>") else {
+            break;
+        };
+        let executable = !attrs.contains(" src=")
+            && (!attrs.contains("type=")
+                || attrs.contains("type=\"module\"")
+                || attrs.contains("javascript"));
+        if executable {
+            scripts.push(&after[body_start..body_start + close]);
+        }
+        rest = &after[body_start + close..];
+    }
+    scripts
+}
+
+/// Headers added to every static response.
+struct SiteHeaders {
+    csp: HeaderValue,
+}
+
+/// Build a buffered response with a fixed content type and the site's
+/// security headers.
 fn respond(
+    headers: &SiteHeaders,
     status: StatusCode,
     content_type: &'static str,
     body: Vec<u8>,
@@ -98,12 +164,27 @@ fn respond(
     Response::builder()
         .status(status)
         .header(CONTENT_TYPE, HeaderValue::from_static(content_type))
+        .header(CONTENT_SECURITY_POLICY, headers.csp.clone())
+        .header(
+            "permissions-policy",
+            HeaderValue::from_static(PERMISSIONS_POLICY),
+        )
+        .header(
+            "cross-origin-opener-policy",
+            HeaderValue::from_static("same-origin"),
+        )
+        .header(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"))
+        .header(
+            REFERRER_POLICY,
+            HeaderValue::from_static("strict-origin-when-cross-origin"),
+        )
         .body(full_body(Bytes::from(body)))
         .expect("a static-header response is always well-formed")
 }
 
-fn not_found() -> Response<ResponseBody> {
+fn not_found(headers: &SiteHeaders) -> Response<ResponseBody> {
     respond(
+        headers,
         StatusCode::NOT_FOUND,
         "text/plain; charset=utf-8",
         b"404 Not Found".to_vec(),
@@ -144,22 +225,41 @@ fn resolve_path(dist: &Path, tail: &[String]) -> Option<PathBuf> {
 }
 
 /// `Raw` catch-all: serve a file from `dist/` or return a real 404.
-async fn serve_static(req: RawRequest, dist: Arc<PathBuf>) -> Response<ResponseBody> {
-    let Some(path) = resolve_path(dist.as_ref(), req.tail()) else {
-        return not_found();
+async fn serve_static(
+    req: RawRequest,
+    dist: Arc<PathBuf>,
+    headers: Arc<SiteHeaders>,
+) -> Response<ResponseBody> {
+    let tail = req.tail();
+    let Some(path) = resolve_path(dist.as_ref(), tail) else {
+        return not_found(&headers);
     };
     let Some(name) = path.file_name().map(|n| n.to_string_lossy().into_owned()) else {
-        return not_found();
+        return not_found(&headers);
     };
-    tokio::fs::read(&path).await.map_or_else(
-        |_| not_found(),
-        |bytes| respond(StatusCode::OK, content_type_for(&name), bytes),
-    )
+    let Ok(bytes) = tokio::fs::read(&path).await else {
+        return not_found(&headers);
+    };
+    let mut response = respond(&headers, StatusCode::OK, content_type_for(&name), bytes);
+    // Web Key Directory clients in browsers fetch keys cross-origin.
+    if tail.first().is_some_and(|s| s == ".well-known")
+        && tail.get(1).is_some_and(|s| s == "openpgpkey")
+    {
+        response
+            .headers_mut()
+            .insert(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"));
+    }
+    response
 }
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let dist = Arc::new(dist_dir());
+    let index_html = std::fs::read_to_string(dist.join("index.html")).unwrap_or_default();
+    let csp = content_security_policy(&index_html);
+    let headers = Arc::new(SiteHeaders {
+        csp: HeaderValue::from_str(&csp).expect("the CSP is built from ASCII"),
+    });
 
     // One description, four interpretations — here we drive the server.
     //   "api" :> "health" :> Get '[PlainText] String
@@ -183,7 +283,8 @@ async fn main() -> std::io::Result<()> {
     let social = || async { Ok::<_, ServerError>(SOCIAL_LINKS.to_vec()) };
     let static_handler = move |req: RawRequest| {
         let dist = Arc::clone(&dist);
-        async move { serve_static(req, dist).await }
+        let headers = Arc::clone(&headers);
+        async move { serve_static(req, dist, headers).await }
     };
 
     let router = serve(api, ((health, social), static_handler));
@@ -223,6 +324,21 @@ mod tests {
         );
         assert_eq!(content_type_for("pgp.asc"), "application/pgp-keys");
         assert_eq!(content_type_for("no-extension"), "application/octet-stream");
+    }
+
+    #[test]
+    fn csp_hashes_only_executable_inline_scripts() {
+        let html = r#"<script type="application/ld+json">{"a":1}</script>
+<script type="module">import init from '/a.js';</script>
+<script src="/b.js"></script>"#;
+        let csp = content_security_policy(html);
+        // sha256("import init from '/a.js';"), base64
+        assert_eq!(inline_scripts(html), ["import init from '/a.js';"]);
+        assert_eq!(csp.matches("'sha256-").count(), 1);
+        assert!(
+            csp.starts_with("default-src 'none'; script-src 'self' 'wasm-unsafe-eval' 'sha256-")
+        );
+        assert!(!csp.contains("script-src 'self' 'unsafe-inline'"));
     }
 
     #[test]

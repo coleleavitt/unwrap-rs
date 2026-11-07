@@ -1532,11 +1532,13 @@ dependencies = [
 name = "server"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "bytes",
  "http",
  "serde",
  "servant",
  "servant-server",
+ "sha2",
  "tokio",
 ]
 
