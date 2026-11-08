@@ -295,6 +295,7 @@ const SITE_HEADER: &str = r#"<header class="intro">
         <a href="mailto:cole@unwrap.rs"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414zM0 4.697v7.104l5.803-3.558zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586zm3.436-.586L16 11.801V4.697z"/></svg>Email</a>
       </nav>
       <p class="pgp"><a href="/pgp.asc" title="OpenPGP key"><span><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 11.5a3.5 3.5 0 1 1 3.163-5H14L15.5 8 14 9.5l-1-1-1 1-1-1-1 1-1-1-1 1H6.663a3.5 3.5 0 0 1-3.163 2M2.5 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/></svg>PGP DEC2 3202 3B77 3F66 98EA</span> <span>54F1 1DFB 3167 910E 6193</span></a><a href="https://keyoxide.org/DEC232023B773F6698EA54F11DFB3167910E6193">verify</a></p>
+      <!-- portrait -->
     </header>"#;
 
 const LATEST_COUNT: usize = 5;
@@ -307,7 +308,15 @@ fn site_header(home: bool) -> String {
     } else {
         r#"<p class="name"><a href="/">Cole Leavitt</a></p>"#
     };
-    SITE_HEADER.replace("<!-- name -->", name)
+    // The portrait appears on the homepage only, beside the name.
+    let portrait = if home {
+        r#"<img class="portrait" src="/cole.jpg" width="128" height="128" alt="Cole Leavitt" decoding="async" />"#
+    } else {
+        ""
+    };
+    SITE_HEADER
+        .replace("<!-- name -->", name)
+        .replace("<!-- portrait -->", portrait)
 }
 
 /// Page shell matching the homepage: same stylesheet, font and column.
@@ -1132,8 +1141,13 @@ draft: true
     fn homepage_header_uses_the_name_as_h1() {
         let home = site_header(true);
         assert!(home.contains(r#"<h1 class="name">Cole Leavitt</h1>"#));
+        assert!(home.contains(r#"class="portrait""#) && !site_header(false).contains("portrait"));
         assert_eq!(
-            home.replace(r#"<h1 class="name">Cole Leavitt</h1>"#, ""),
+            home.replace(r#"<h1 class="name">Cole Leavitt</h1>"#, "")
+                .replace(
+                    r#"<img class="portrait" src="/cole.jpg" width="128" height="128" alt="Cole Leavitt" decoding="async" />"#,
+                    ""
+                ),
             site_header(false).replace(r#"<p class="name"><a href="/">Cole Leavitt</a></p>"#, "")
         );
     }
