@@ -6,15 +6,15 @@ use wasm_bindgen::JsCast as _;
 use wasm_bindgen::prelude::*;
 use web_sys::{Element, HtmlInputElement, HtmlTextAreaElement};
 
-use crate::{listing, parse_address, parse_hex};
+use crate::{listing_html, parse_address, parse_hex};
 
 fn update(bytes: &HtmlTextAreaElement, base: &HtmlInputElement, output: &Element) {
-    let text = match (parse_hex(&bytes.value()), parse_address(&base.value())) {
-        (Ok(code), Ok(address)) => listing(&code, address),
-        (Err(e), _) | (_, Err(e)) => format!("error: {e}"),
-    };
-    // text content, never HTML: the input is the reader's
-    output.set_text_content(Some(&text));
+    match (parse_hex(&bytes.value()), parse_address(&base.value())) {
+        // listing_html escapes everything it prints
+        (Ok(code), Ok(address)) => output.set_inner_html(&listing_html(&code, address)),
+        // errors quote the reader's input, so they go in as text only
+        (Err(e), _) | (_, Err(e)) => output.set_text_content(Some(&format!("error: {e}"))),
+    }
 }
 
 fn wire(demo: &Element) -> Option<()> {
