@@ -17,6 +17,9 @@ mmd-svg = { path = "../../mmd-svg" }
 # Build-time syntax highlighting (Sublime grammars, as used by bat and zola);
 # fancy-regex keeps it pure Rust. Output is classed spans, styled in index.css.
 # yaml-load reads the vendored syntaxes/Rust.sublime-syntax.
+# ```xtensa-demo fences: the listing is rendered at build time with the
+# same decoder the page then runs as WebAssembly
+xtensa-dis = { path = "../xtensa-dis" }
 # content/entries.toml: the homepage and CV entries (build time only)
 serde = { version = "1.0.229", features = ["derive"] }
 toml = "1.2.1"

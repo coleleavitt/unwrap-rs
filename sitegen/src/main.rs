@@ -127,6 +127,48 @@ fn inline_code(text: &str) -> String {
     format!("<code>{}</code>", words.join(" "))
 }
 
+/// The live Xtensa disassembler. The fence holds an optional `base <hex>`
+/// line and the example bytes; the listing is rendered here, with the same
+/// decoder the page later runs as WebAssembly (`/demos/xtensa-dis/`), so the
+/// example reads the same without JavaScript. Inputs start read-only; the
+/// WebAssembly module makes them editable when it loads.
+fn xtensa_demo(src: &str) -> String {
+    let mut base = "0x0".to_string();
+    let mut hex = String::new();
+    for line in src.lines() {
+        if let Some(b) = line.trim().strip_prefix("base ") {
+            base = format!("0x{}", b.trim().trim_start_matches("0x"));
+        } else {
+            hex.push_str(line.trim());
+            hex.push('\n');
+        }
+    }
+
+    let hex = hex.trim().to_string();
+    let address =
+        xtensa_dis::parse_address(&base).unwrap_or_else(|e| panic!("xtensa-demo base: {e}"));
+    let code = xtensa_dis::parse_hex(&hex).unwrap_or_else(|e| panic!("xtensa-demo bytes: {e}"));
+    let rows = hex.lines().count().clamp(2, 8);
+    format!(
+        r#"<figure class="xtensa-demo">
+<div class="xtensa-inputs">
+<label>Bytes (hex)<textarea class="xtensa-bytes" rows="{rows}" spellcheck="false" autocomplete="off" readonly>{hex}</textarea></label>
+<label>Base address<input class="xtensa-base" value="{base}" spellcheck="false" autocomplete="off" readonly></label>
+</div>
+<pre class="xtensa-out" tabindex="0" aria-label="Disassembly">{listing}</pre>
+</figure>
+"#,
+        hex = esc(&hex),
+        base = esc(&base),
+        listing = esc(&xtensa_dis::listing(&code, address)),
+    )
+}
+
+/// The module that makes `.xtensa-demo` figures live, added to pages that
+/// contain one.
+const XTENSA_DEMO_SCRIPT: &str = r#"  <script type="module" src="/demos/xtensa-dis/boot.js"></script>
+"#;
+
 /// Grammars for build-time highlighting: syntect's bundled Sublime syntaxes,
 /// plus a current Rust grammar. The bundled ones date from Sublime Text 3
 /// (sublimehq/Packages v3154); the vendored Rust grammar (sublimehq/Packages
@@ -149,6 +191,9 @@ static SYNTAXES: LazyLock<SyntaxSet> = LazyLock::new(|| {
 /// `hl-*` classed spans (colors live in `index.css`), anything else, such
 /// as logs and tool output, stays plain.
 fn render_code(lang: &str, code: &str) -> String {
+    if lang == "xtensa-demo" {
+        return xtensa_demo(code);
+    }
     if lang == "mermaid" {
         let svg =
             mmd_svg::render(code).unwrap_or_else(|e| panic!("mermaid block failed to render: {e}"));
@@ -361,14 +406,19 @@ fn post_page(post: &Post, older: Option<&Post>, newer: Option<&Post>, css_href: 
         minutes = post.reading_minutes,
         body = post.body_html,
     );
-    page(
+    let html = page(
         &format!("{} — Cole Leavitt", esc(&post.title)),
         &esc(&post.description),
         &post.url(),
         "article",
         css_href,
         &main,
-    )
+    );
+    if post.body_html.contains(r#"<figure class="xtensa-demo">"#) {
+        html.replacen("</head>", &format!("{XTENSA_DEMO_SCRIPT}</head>"), 1)
+    } else {
+        html
+    }
 }
 
 /// A standalone page from `content/pages/<slug>.md`, served at `/<slug>/`.
@@ -896,6 +946,15 @@ draft: true
         let html = render_markdown("Run `-march=a -O2` and `<x>`.");
         assert!(html.contains("<code><span>-march=a</span> <span>-O2</span></code>"));
         assert!(html.contains("<code><span>&lt;x&gt;</span></code>"));
+    }
+
+    #[test]
+    fn xtensa_demo_renders_the_listing_at_build_time() {
+        let html = render_markdown("```xtensa-demo\nbase 40080000\n36 41 00\n```\n");
+        assert!(html.contains(r#"<figure class="xtensa-demo">"#));
+        assert!(html.contains(r#"value="0x40080000""#));
+        assert!(html.contains("40080000:  364100  entry      a1, 32"));
+        assert!(html.contains("readonly"));
     }
 
     #[test]

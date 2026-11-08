@@ -1,0 +1,20 @@
+[package]
+name = "xtensa-dis"
+version = "0.1.0"
+description = "Xtensa disassembler generated from LLVM's TableGen records, checked against llvm-mc"
+edition.workspace = true
+rust-version = "1.88"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlElement", "HtmlInputElement", "HtmlTextAreaElement", "Event", "EventTarget", "Node", "NodeList"] }
+
+[lints]
+workspace = true

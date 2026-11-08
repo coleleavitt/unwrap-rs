@@ -48,3 +48,12 @@ software is granted. This software is provided "as is" without
 express or implied warranty, and with no claim as to its
 suitability for any purpose.
 ```
+
+## LLVM Xtensa target (llvm-project)
+
+`xtensa-dis/src/table.rs` is generated from the TableGen records of LLVM's
+Xtensa target (`llvm/lib/Target/Xtensa/*.td`, llvm-project llvmorg-22.1.8),
+and the operand decoding and printing in `xtensa-dis/src/lib.rs` follow
+`XtensaDisassembler.cpp` and `XtensaInstPrinter.cpp` from the same release.
+LLVM is licensed under the Apache License v2.0 with LLVM Exceptions
+(https://llvm.org/LICENSE.txt).

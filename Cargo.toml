@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["frontend", "server", "sitegen"]
+members = ["frontend", "server", "sitegen", "xtensa-dis"]
 # `cargo build`/`cargo test` at the root touch only the native server.
 # The frontend is a wasm32 crate driven by Trunk (see frontend/Trunk.toml);
 # building it for the host target fails on purpose (getrandom wasm_js backend).
