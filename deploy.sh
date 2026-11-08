@@ -193,6 +193,8 @@ PY
         || die "local CSP header check failed"
     response=$(curl --fail --silent --show-error "$smoke_url/pgp.asc")
     [[ $response == '-----BEGIN PGP PUBLIC KEY BLOCK-----'* ]] || die "local pgp.asc check failed"
+    curl --fail --silent --show-error "$smoke_url/THIRD-PARTY-NOTICES.md" >/dev/null ||
+        die "third-party notices are not shipped"
     response=$(curl --fail --silent --show-error "$smoke_url/feed.xml" || true)
     [[ $response == *'<feed'* ]] || die "local feed.xml check failed"
     headers=$(curl --fail --silent --show-error --head "$smoke_url/$(basename "$wasm_path")")

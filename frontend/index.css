@@ -528,7 +528,13 @@ a {
        column; wider than the screen, it scrolls. */
     width: max-content;
     min-width: 100%;
-    max-width: min(var(--column), calc(100vw - 2 * var(--gutter)));
+    max-width: min(
+        var(--column),
+        calc(
+            100vw - max(var(--gutter), env(safe-area-inset-left)) -
+                max(var(--gutter), env(safe-area-inset-right))
+        )
+    );
     margin: 1.75rem 0;
     overflow-x: auto;
 }
@@ -552,6 +558,10 @@ a {
 .post-body table {
     border-collapse: collapse;
     font-size: 0.875rem;
+    /* wide tables scroll inside the column instead of being clipped */
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 .post-body th,
@@ -562,6 +572,16 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    /* Applies live: if reduced motion is switched on after the animation
+       mounted, hide it and show the static `.unwrap()` again. */
+    .animation-field {
+        display: none;
+    }
+
+    .hero:has(.animation-field) .hero-static {
+        display: inline;
+    }
+
     *,
     *::before,
     *::after {
