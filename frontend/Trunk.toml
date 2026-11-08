@@ -1,3 +1,13 @@
 [serve]
 addresses = ["127.0.0.1"]
 port = 8080
+
+# Rebuild when the content or the generator changes, not only the frontend.
+[watch]
+watch = [".", "../content", "../sitegen/src"]
+
+# sitegen fills the header, the entry sections and the writing pages.
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = ["../scripts/trunk-sitegen.sh"]

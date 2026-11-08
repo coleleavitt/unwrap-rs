@@ -134,18 +134,12 @@ build_and_smoke_test() {
     log "building static server ($BUILD_TARGET)"
     cargo build --locked --release --target "$BUILD_TARGET" -p server
 
-    log "building frontend"
+    log "building frontend and pages (trunk runs sitegen as a post_build hook)"
     (
         cd "$ROOT_DIR/frontend"
         env -u NO_COLOR trunk build --locked --release
     )
 
-    log "generating writing pages"
-    (
-        cd "$ROOT_DIR"
-        SITE_ROOT="$ROOT_DIR" DIST_DIR="$ROOT_DIR/frontend/dist" \
-            cargo run --locked --release --quiet -p sitegen
-    )
 
     local binary="$ROOT_DIR/target/$BUILD_TARGET/release/server"
     local dist="$ROOT_DIR/frontend/dist"
@@ -184,6 +178,9 @@ PY
     local response headers
     response=$(curl --fail --silent --show-error "$smoke_url/")
     [[ $response == *'<title>'* ]] || die "local HTML check failed"
+    [[ $response == *'class="intro"'* && $response == *'research-heading'* ]] ||
+        die "homepage is missing the sitegen header or sections (trunk post_build hook)"
+    curl --fail --silent --show-error "$smoke_url/cv/" >/dev/null || die "local /cv/ check failed"
     response=$(curl --fail --silent --show-error "$smoke_url/robots.txt")
     [[ $response == User-agent:* ]] || die "local robots.txt check failed"
     response=$(curl --fail --silent --show-error "$smoke_url/sitemap.xml")

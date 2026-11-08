@@ -19,7 +19,7 @@ The repo is a Cargo workspace (edition 2024) with three crates (`frontend`, `ser
 
 | Layer | Files | Owns |
 |---|---|---|
-| Page content | `frontend/index.html`, `content/entries.toml` | Homepage shell: metadata, the animation mount, and three markers sitegen fills at build: `sitegen:header`, `sitegen:sections` (from `entries.toml`), `sitegen:latest`. `trunk serve` alone shows the shell without them |
+| Page content | `frontend/index.html`, `content/entries.toml` | Homepage shell: metadata, the animation mount, and three markers sitegen fills at build: `sitegen:header`, `sitegen:sections` (from `entries.toml`), `sitegen:latest` |
 | Animation | `frontend/src/app/typing_animation/`, `frontend/src/main.rs` | The particle animation, mounted into `#animation-mount` (skipped under reduced motion) |
 | Entries and CV | `content/entries.toml`, `sitegen/src/entries.rs` | Every dated entry on the site, once: sections with `pages` (`home`, `cv`), dates `YYYY-MM` or `YYYY` (ranges `start`/`end`, `now`), shown newest first by one renderer that also draws the writing lists. `/cv/` is the `cv` sections plus print styles in `index.css` (2 Letter pages). It names Cole's current employer by his choice (2026-11-08); describe ERS only at the level of its README's first lines, never client, vendor, or data names |
 | Writing | `content/writing/*.md`, `sitegen/` | Markdown posts (` ```mermaid ` fences become inline SVG; fences with a known language get build-time syntax highlighting via syntect, `hl-*` classes styled in `index.css`; Rust uses the vendored current grammar `sitegen/syntaxes/Rust.sublime-syntax`, since syntect's bundled grammars are from 2018) rendered to `dist/writing/`, `feed.xml`, `sitemap.xml`, and the homepage's latest-posts section (skips posts the homepage already links to) |
@@ -27,7 +27,7 @@ The repo is a Cargo workspace (edition 2024) with three crates (`frontend`, `ser
 | Keys and disclosure | `frontend/pgp.asc`, `frontend/.well-known/` (`security.txt`, `openpgpkey/` WKD) | Cole's OpenPGP keys (`DEC2 3202 3B77…6193` primary, `2EFA…3402` older, cross-signed), RFC 9116 contact. Re-export both and the WKD file (`gpg --list-keys --with-wkd-hash`) when a key changes; renew `Expires` in `security.txt` yearly |
 | Styling | `frontend/index.css`, `frontend/tailwind.config.js`, `frontend/fonts/` | One stylesheet for every page; self-hosted JetBrains Mono (Latin subset, OFL) |
 | Server | `server/src/main.rs` | One servant-rs API description: `GET /api/health`, `GET /api/social-links`, and a `Raw` static-file catch-all for `dist/` with directory indexes and the security headers (CSP, Permissions-Policy, COOP; CORS on the WKD path) |
-| Deploy | `deploy.sh`, `deploy/unwrap-rs.service` | Build (trunk, then sitegen), smoke test, atomic release, status, rollback on the `linode` host |
+| Deploy | `deploy.sh`, `deploy/unwrap-rs.service` | Build (trunk, which runs sitegen), smoke test, atomic release, status, rollback on the `linode` host |
 
 Animation module boundaries (keep them):
 
@@ -40,7 +40,7 @@ Animation module boundaries (keep them):
 Composition rules:
 
 - The homepage is static HTML; only the animation is Leptos 0.8 CSR (`wasm32-unknown-unknown`, built by Trunk). No SSR, no hydration. Without JS or with reduced motion, the static `.unwrap()` span shows.
-- Writing pages are plain HTML from `sitegen`, run by `deploy.sh` after `trunk build` (`SITE_ROOT=. DIST_DIR=frontend/dist cargo run -p sitegen`). `trunk serve` does not run it.
+- Writing pages, `/cv/` and the homepage's header and sections are plain HTML from `sitegen`. Trunk runs it as a `post_build` hook (`scripts/trunk-sitegen.sh`, writing into Trunk's staging dir), so `trunk build`, `trunk serve` and `deploy.sh` all produce the whole site; `trunk serve` also rebuilds on changes under `content/` and `sitegen/src/`. Keep cargo arguments in that script: Trunk's hook config mangled multi-word arguments before.
 - The CSP allows Trunk's inline loader by hash, read from `dist/index.html` when the server starts. Restart the server after every rebuild, or the stale hash blocks the animation (deploys restart it).
 - The server is not a Leptos server. It serves `DIST_DIR` and two typed endpoints. Add endpoints to the single `servant` API description, not as side routes.
 - Every page shares one header (name, sentence, links, PGP line): `SITE_HEADER` in `sitegen/src/main.rs`. The homepage gets it through its `sitegen:header` marker with the name as the h1; other pages get the name as a home link. The GitHub/LinkedIn/Email links also appear in `SOCIAL_LINKS` in `server/src/main.rs` (the API; its `icon_path`s point at `src/app/social_links/icons/`, still copied by Trunk). Change them together.
