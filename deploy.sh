@@ -202,6 +202,10 @@ PY
     [[ $(curl --silent --output /dev/null --write-out '%{http_code}' "$smoke_url/definitely-not-a-real-page") == 404 ]] || die "unknown paths must return 404"
     [[ $(curl --silent "$smoke_url/definitely-not-a-real-page") == *'Err(NotFound)'* ]] || die "unknown paths must get the 404 page"
     curl --fail --silent --show-error "$smoke_url/uses/" >/dev/null || die "local /uses/ check failed"
+    boot=$(curl --fail --silent --show-error "$smoke_url/writing/xtensa-decoder-apartment-wifi/" |
+        grep -o '/demos/xtensa-dis/boot-[0-9a-f]*\.js' | head -n 1)
+    [[ -n $boot ]] || die "the Xtensa post does not load its demo"
+    curl --fail --silent --show-error "$smoke_url$boot" >/dev/null || die "demo loader $boot is missing"
 
     kill "$LOCAL_SERVER_PID"
     wait "$LOCAL_SERVER_PID" 2>/dev/null || true

@@ -164,10 +164,22 @@ fn xtensa_demo(src: &str) -> String {
     )
 }
 
-/// The module that makes `.xtensa-demo` figures live, added to pages that
-/// contain one.
-const XTENSA_DEMO_SCRIPT: &str = r#"  <script type="module" src="/demos/xtensa-dis/boot.js"></script>
-"#;
+/// The content-hashed module that makes `.xtensa-demo` figures live
+/// (`demos/xtensa-dis/boot-<hash>.js`, written by the Trunk hook), as a
+/// site path.
+fn xtensa_demo_boot(dist: &Path) -> Option<String> {
+    fs::read_dir(dist.join("demos/xtensa-dis"))
+        .ok()?
+        .flatten()
+        .find_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            (name.starts_with("boot-")
+                && Path::new(&name)
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("js")))
+            .then(|| format!("/demos/xtensa-dis/{name}"))
+        })
+}
 
 /// Grammars for build-time highlighting: syntect's bundled Sublime syntaxes,
 /// plus a current Rust grammar. The bundled ones date from Sublime Text 3
@@ -375,7 +387,13 @@ fn dated_entries<'a>(posts: impl IntoIterator<Item = &'a Post>) -> String {
     entries::entries_list(&rows)
 }
 
-fn post_page(post: &Post, older: Option<&Post>, newer: Option<&Post>, css_href: &str) -> String {
+fn post_page(
+    post: &Post,
+    older: Option<&Post>,
+    newer: Option<&Post>,
+    css_href: &str,
+    demo_boot: Option<&str>,
+) -> String {
     let link = |p: &Post, rel: &str, label: &str| {
         format!(
             r#"      <a class="post-nav-{rel}" rel="{rel}" href="/writing/{slug}/"><span class="post-nav-label">{label}</span><span class="post-nav-title">{title}</span></a>
@@ -414,11 +432,20 @@ fn post_page(post: &Post, older: Option<&Post>, newer: Option<&Post>, css_href: 
         css_href,
         &main,
     );
-    if post.body_html.contains(r#"<figure class="xtensa-demo">"#) {
-        html.replacen("</head>", &format!("{XTENSA_DEMO_SCRIPT}</head>"), 1)
-    } else {
-        html
+    if !post.body_html.contains(r#"<figure class="xtensa-demo">"#) {
+        return html;
     }
+    let boot = demo_boot.unwrap_or_else(|| {
+        panic!(
+            "{} has a live demo, but demos/xtensa-dis/ was not built (run through trunk)",
+            post.slug
+        )
+    });
+    html.replacen(
+        "</head>",
+        &format!("  <script type=\"module\" src=\"{boot}\"></script>\n</head>"),
+        1,
+    )
 }
 
 /// A standalone page from `content/pages/<slug>.md`, served at `/<slug>/`.
@@ -792,13 +819,20 @@ fn main() -> std::io::Result<()> {
         "writing/index.html",
         &writing_index(&posts, &css_href),
     )?;
+    let demo_boot = xtensa_demo_boot(&dist);
     // `posts` is newest first: the next element is the older post.
     for (i, post) in posts.iter().enumerate() {
         let newer = i.checked_sub(1).map(|n| &posts[n]);
         write_dist(
             &dist,
             &format!("writing/{}/index.html", post.slug),
-            &post_page(post, posts.get(i + 1), newer, &css_href),
+            &post_page(
+                post,
+                posts.get(i + 1),
+                newer,
+                &css_href,
+                demo_boot.as_deref(),
+            ),
         )?;
     }
     let pages = load_pages(&root.join("content/pages")).map_err(std::io::Error::other)?;
@@ -975,11 +1009,11 @@ draft: true
             reading_minutes: 4,
         };
         let (old, mid, new) = (post("old"), post("mid"), post("new"));
-        let html = post_page(&mid, Some(&old), Some(&new), "/a.css");
+        let html = post_page(&mid, Some(&old), Some(&new), "/a.css", None);
         assert!(html.contains(r#"rel="prev" href="/writing/old/""#));
         assert!(html.contains(r#"rel="next" href="/writing/new/""#));
         assert!(html.contains("· 4 min read"));
-        assert!(!post_page(&mid, None, None, "/a.css").contains("post-nav"));
+        assert!(!post_page(&mid, None, None, "/a.css", None).contains("post-nav"));
     }
 
     #[test]

@@ -20,13 +20,20 @@ if [ ! -x "$bindgen" ]; then
 fi
 demo="$TRUNK_STAGING_DIR/demos/xtensa-dis"
 cargo build --locked --release --quiet -p xtensa-dis --lib --target wasm32-unknown-unknown
-"$bindgen" --target web --no-typescript --out-dir "$demo" \
-    target/wasm32-unknown-unknown/release/xtensa_dis.wasm
+wasm=target/wasm32-unknown-unknown/release/xtensa_dis.wasm
+# Content-hashed names, like Trunk's: a CDN may cache these files for hours,
+# and a cached old loader must never meet a new module.
+hash=$(sha256sum "$wasm" | cut -c1-16)
+name="xtensa_dis-$hash"
+rm -rf "$demo"
+"$bindgen" --target web --no-typescript --out-name "$name" --out-dir "$demo" "$wasm"
 wasm_opt=$(find "$tools" -path '*wasm-opt*' -name wasm-opt -type f 2>/dev/null | sort | tail -n 1)
 if [ -n "$wasm_opt" ]; then
     "$wasm_opt" -Oz --enable-bulk-memory --enable-nontrapping-float-to-int \
-        "$demo/xtensa_dis_bg.wasm" -o "$demo/xtensa_dis_bg.wasm"
+        "$demo/${name}_bg.wasm" -o "$demo/${name}_bg.wasm"
 fi
-cp xtensa-dis/web/boot.js "$demo/"
+# sitegen finds this file by its boot-*.js name
+printf '%s\n' "// Loads the live Xtensa disassembler (Rust compiled to WebAssembly)." \
+    "import init from \"./$name.js\";" "" "init();" > "$demo/boot-$hash.js"
 
 SITE_ROOT=. DIST_DIR="$TRUNK_STAGING_DIR" exec cargo run --locked --release --quiet -p sitegen
