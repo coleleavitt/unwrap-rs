@@ -163,27 +163,6 @@ href = "https://aur.archlinux.org/packages/sf"
 pages = ["cv"]
 
 [[section]]
-id = "skills"
-label = "Skills"
-pages = ["cv"]
-
-[[section.entry]]
-name = "Languages"
-desc = "Rust, C, C++, Python, TypeScript and JavaScript"
-
-[[section.entry]]
-name = "Reverse engineering"
-desc = "IDA Pro (IDAPython, IDAlib, plugins), binary and database formats, firmware"
-
-[[section.entry]]
-name = "Systems"
-desc = "Linux kernel (PCI hotplug, power management, Wi-Fi, audio), rustc MIR, LLVM IR"
-
-[[section.entry]]
-name = "Security"
-desc = "Vulnerability research, coordinated disclosure, OpenPGP and GnuPG internals"
-
-[[section]]
 id = "education"
 label = "Education"
 pages = ["cv"]
