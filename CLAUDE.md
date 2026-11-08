@@ -59,7 +59,7 @@ Do not add, unless Cole asks:
 
 ## Current State
 
-- Branch `dev`. Deployed 2026-11-08 (release `20261108T002116Z-d72ce4c`, seven posts, syntax highlighting).
+- Branch `dev`. Deployed 2026-11-08 (release `20261108T053324Z-16f1143`: seven posts, CV, single-source entries).
 - Production nginx (`/etc/nginx/sites-enabled/unwrap.rs` on `linode`, not in this repo) proxies everything to the app except `/dori/`. It adds only HSTS and `X-Frame-Options`; every other security header comes from the app, so do not add duplicates in nginx. The old `/.well-known` and `/proof` proxy to a Nebula peer was removed on 2026-11-07 (backups in `/root/unwrap.rs.nginx.bak-*`). TLS renews by DNS-01 through Cloudflare.
 - Cloudflare injects its Web Analytics beacon; the CSP blocks it. Turn it off in the Cloudflare dashboard rather than allowing it.
 - Layout: one left-aligned column (`--column: 56rem`) shared by the homepage and writing pages. One accent (`--accent: #dd68ff`).
