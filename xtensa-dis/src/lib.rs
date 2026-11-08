@@ -425,35 +425,116 @@ pub fn parse_address(text: &str) -> Result<u32, String> {
     u32::from_str_radix(t, 16).map_err(|_| format!("not a 32-bit hex address: {text:?}"))
 }
 
+/// One row of a listing.
+struct Row {
+    address: u32,
+    hex: String,
+    mnemonic: &'static str,
+    operands: String,
+}
+
+fn rows(code: &[u8], base: u32) -> Vec<Row> {
+    disassemble(&code[..code.len().min(MAX_BYTES)], base, Targets::Absolute)
+        .into_iter()
+        .map(|line| {
+            let hex = line.bytes.iter().fold(String::new(), |mut s, b| {
+                let _ = write!(s, "{b:02x}");
+                s
+            });
+            let (mnemonic, operands) = line.insn.map_or_else(
+                || (".byte", format!("{:#04x}", line.bytes[0])),
+                |i| (i.mnemonic, i.operands),
+            );
+            Row {
+                address: line.address,
+                hex,
+                mnemonic,
+                operands,
+            }
+        })
+        .collect()
+}
+
+fn more_bytes(code: &[u8]) -> Option<String> {
+    (code.len() > MAX_BYTES).then(|| format!("... {} more bytes not shown", code.len() - MAX_BYTES))
+}
+
 /// A plain-text listing: address, bytes, instruction. Bytes that decode to
 /// nothing are shown as `.byte`, one at a time.
 #[must_use]
 pub fn listing(code: &[u8], base: u32) -> String {
     // `fmt::Write` for `String` never fails, so its results are ignored.
     let mut out = String::new();
-    let shown = &code[..code.len().min(MAX_BYTES)];
-    for line in disassemble(shown, base, Targets::Absolute) {
-        let hex = line.bytes.iter().fold(String::new(), |mut s, b| {
-            let _ = write!(s, "{b:02x}");
-            s
-        });
-        let _ = match line.insn {
-            Some(i) => writeln!(
-                out,
-                "{:08x}:  {hex:<6}  {:<10} {}",
-                line.address, i.mnemonic, i.operands
-            ),
-            None => writeln!(
-                out,
-                "{:08x}:  {hex:<6}  .byte      {:#04x}",
-                line.address, line.bytes[0]
-            ),
-        };
+    for r in rows(code, base) {
+        let _ = writeln!(
+            out,
+            "{:08x}:  {:<6}  {:<10} {}",
+            r.address, r.hex, r.mnemonic, r.operands
+        );
     }
-    if code.len() > MAX_BYTES {
-        let _ = writeln!(out, "... {} more bytes not shown", code.len() - MAX_BYTES);
+    if let Some(note) = more_bytes(code) {
+        out.push_str(&note);
     }
     out.trim_end().to_string()
+}
+
+/// What an operand token is, for highlighting. The printer writes registers
+/// as names, immediates in decimal and (absolute) targets in hex, so the
+/// token's shape says which it is.
+fn token_class(mnemonic: &str, token: &str) -> &'static str {
+    if mnemonic == ".byte" {
+        "xt-imm"
+    } else if token.starts_with("0x") {
+        "xt-target"
+    } else if token.parse::<i64>().is_ok() {
+        "xt-imm"
+    } else {
+        "xt-reg"
+    }
+}
+
+/// The listing as HTML: the same text as [`listing`], with each part in a
+/// `<span class="xt-…">` (address, bytes, mnemonic, register, immediate,
+/// target) for the stylesheet. Everything is escaped.
+#[must_use]
+pub fn listing_html(code: &[u8], base: u32) -> String {
+    let mut out = String::new();
+    for r in rows(code, base) {
+        let _ = write!(
+            out,
+            r#"<span class="xt-addr">{:08x}:</span>  <span class="xt-bytes">{}</span>{}  <span class="xt-mn">{}</span>{} "#,
+            r.address,
+            r.hex,
+            " ".repeat(6usize.saturating_sub(r.hex.len())),
+            html_escape(r.mnemonic),
+            " ".repeat(10usize.saturating_sub(r.mnemonic.len())),
+        );
+        for (n, token) in r.operands.split(", ").enumerate() {
+            if n > 0 {
+                out.push_str(", ");
+            }
+            if !token.is_empty() {
+                let _ = write!(
+                    out,
+                    r#"<span class="{}">{}</span>"#,
+                    token_class(r.mnemonic, token),
+                    html_escape(token)
+                );
+            }
+        }
+        out.push('\n');
+    }
+    if let Some(note) = more_bytes(code) {
+        out.push_str(&html_escape(&note));
+    }
+    out.trim_end().to_string()
+}
+
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }
 
 #[cfg(test)]
@@ -507,6 +588,33 @@ mod tests {
         );
         assert!(parse_hex("c0 2").is_err() && parse_hex("zz").is_err());
         assert_eq!(parse_address("0x40080000").unwrap(), 0x4008_0000);
+    }
+
+    #[test]
+    fn html_listing_marks_each_part_and_matches_the_text() {
+        let code = [0x76, 0x83, 0x05, 0x14];
+        let html = listing_html(&code, 0x4008_0005);
+        assert!(html.contains(r#"<span class="xt-mn">loop</span>"#));
+        assert!(html.contains(
+            r#"<span class="xt-reg">a3</span>, <span class="xt-target">0x4008000e</span>"#
+        ));
+        assert!(
+            html.contains(
+                r#"<span class="xt-mn">.byte</span>      <span class="xt-imm">0x14</span>"#
+            )
+        );
+        // stripping the tags gives the plain listing
+        let mut text = String::new();
+        let mut in_tag = false;
+        for c in html.chars() {
+            match c {
+                '<' => in_tag = true,
+                '>' => in_tag = false,
+                _ if !in_tag => text.push(c),
+                _ => {}
+            }
+        }
+        assert_eq!(text, listing(&code, 0x4008_0005));
     }
 
     #[test]

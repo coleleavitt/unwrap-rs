@@ -160,7 +160,7 @@ fn xtensa_demo(src: &str) -> String {
 "#,
         hex = esc(&hex),
         base = esc(&base),
-        listing = esc(&xtensa_dis::listing(&code, address)),
+        listing = xtensa_dis::listing_html(&code, address),
     )
 }
 
@@ -953,7 +953,7 @@ draft: true
         let html = render_markdown("```xtensa-demo\nbase 40080000\n36 41 00\n```\n");
         assert!(html.contains(r#"<figure class="xtensa-demo">"#));
         assert!(html.contains(r#"value="0x40080000""#));
-        assert!(html.contains("40080000:  364100  entry      a1, 32"));
+        assert!(html.contains(r#"<span class="xt-mn">entry</span>      <span class="xt-reg">a1</span>, <span class="xt-imm">32</span>"#));
         assert!(html.contains("readonly"));
     }
 

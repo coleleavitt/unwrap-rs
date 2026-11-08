@@ -650,6 +650,29 @@ a {
     margin: 0;
 }
 
+/* Listing colors: the code-block palette, assigned by what the decoder
+   printed rather than by a grammar. */
+.xt-addr,
+.xt-bytes {
+    color: #958aa3;
+}
+
+.xt-mn {
+    color: var(--accent);
+}
+
+.xt-reg {
+    color: #e8def0;
+}
+
+.xt-imm {
+    color: #ff9ed8;
+}
+
+.xt-target {
+    color: #c9a6ff;
+}
+
 @media (max-width: 40rem) {
     .xtensa-inputs {
         grid-template-columns: 1fr;
