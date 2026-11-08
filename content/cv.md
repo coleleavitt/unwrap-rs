@@ -8,7 +8,7 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
     <section class="section" aria-labelledby="experience-heading">
       <h2 id="experience-heading" class="section-label">Experience</h2>
       <ul class="entries">
-        <li><div class="entry-static"><span class="entry-name">Foundations Investment Advisors</span><span class="entry-desc">Principal Security Engineer. Built ERS, the firm's entity-resolution and data platform in Rust. It syncs about 19 million records a day from 7 providers into a 1.4-billion-row ClickHouse warehouse, matches records across them, and serves them through a signed GraphQL API</span><span class="entry-meta">2024–now</span></div></li>
+        <li><div class="entry-static"><span class="entry-name">Foundations Investment Advisors</span><span class="entry-desc">Principal Security Engineer. Built ERS, the firm's entity-resolution and data platform in Rust. It syncs about 19 million records a day from 7 providers into a 1.4-billion-row ClickHouse warehouse, matches records across them, and serves them through a signed GraphQL API</span><span class="entry-meta">2025-11–now</span></div></li>
       </ul>
     </section>
     <section class="section" aria-labelledby="research-heading">
