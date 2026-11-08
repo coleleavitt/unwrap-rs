@@ -593,8 +593,8 @@ a {
     body {
         min-height: 0;
         background: none;
-        font-size: 9.5pt;
-        line-height: 1.45;
+        font-size: 9pt;
+        line-height: 1.4;
     }
 
     .page {
