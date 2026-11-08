@@ -66,6 +66,49 @@ a {
 }
 
 /* Intro */
+/* Homepage only: the portrait sits right of the name, sentence and links. */
+.intro:has(.portrait) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 2rem;
+}
+
+.intro:has(.portrait) > :not(.portrait) {
+    grid-column: 1;
+}
+
+.portrait {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    align-self: start;
+    width: 8rem;
+    height: 8rem;
+    border: 1px solid var(--faint);
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+@media (max-width: 40rem) {
+    .intro:has(.portrait) {
+        grid-template-columns: 1fr;
+    }
+
+    .portrait {
+        grid-column: 1;
+        grid-row: auto;
+        order: -1;
+        width: 5.5rem;
+        height: 5.5rem;
+        margin-bottom: 1rem;
+    }
+}
+
+@media print {
+    .portrait {
+        display: none;
+    }
+}
+
 .name {
     margin: 0;
     font-size: clamp(1.625rem, 4.5vw, 2.25rem);
