@@ -9,6 +9,7 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
       <h2 id="experience-heading" class="section-label">Experience</h2>
       <ul class="entries">
         <li><div class="entry-static"><span class="entry-name">Foundations Investment Advisors</span><span class="entry-desc">Principal Security Engineer. Built ERS, the firm's entity-resolution and data platform in Rust. It syncs about 19 million records a day from 7 providers into a 1.4-billion-row ClickHouse warehouse, matches records across them, and serves them through a signed GraphQL API</span><span class="entry-meta">2025-11–now</span></div></li>
+        <li><div class="entry-static"><span class="entry-name">Bru Credit</span><span class="entry-desc">Linux Administrator and Full-Stack Developer (remote). Built an automated credit-analysis platform and moved its infrastructure from AWS and GCP to on-premise Proxmox and ESXi</span><span class="entry-meta">2025-02–2025-06</span></div></li>
       </ul>
     </section>
     <section class="section" aria-labelledby="research-heading">
@@ -46,6 +47,7 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
         <li><a href="/writing/keyoxide-gpg-agent/"><span class="entry-name">keyoxide</span><span class="entry-desc">SSH and GPG agent in Rust that serves gpg-agent's protocol</span><span class="entry-meta">2026-11</span></a></li>
         <li><a href="/writing/codeflow-mir/"><span class="entry-name">codeflow</span><span class="entry-desc">Call trees and control-flow graphs for coding agents, incl. rustc MIR</span><span class="entry-meta">2026-10</span></a></li>
         <li><a href="https://github.com/coleleavitt/remarkable-ecosystem"><span class="entry-name">reMarkable</span><span class="entry-desc">Reverse-engineered sync protocols and a self-hosted cloud: 11 tools</span><span class="entry-meta">2026-09</span></a></li>
+        <li><a href="https://aur.archlinux.org/packages/sf"><span class="entry-name">AUR: sf</span><span class="entry-desc">Maintainer of the Salesforce CLI package for Arch Linux</span></a></li>
       </ul>
     </section>
     <section class="section" aria-labelledby="skills-heading">
@@ -62,6 +64,14 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
       <ul class="entries">
         <li><div class="entry-static"><span class="entry-name">University of Arizona</span><span class="entry-desc">Computer Science; left to work full time</span><span class="entry-meta">2023–2024</span></div></li>
         <li><div class="entry-static"><span class="entry-name">Pima JTED</span><span class="entry-desc">Cybersecurity, and Artificial Intelligence Software &amp; Development, with dual enrollment at Pima Community College</span><span class="entry-meta">2021–2023</span></div></li>
+      </ul>
+    </section>
+    <section class="section" aria-labelledby="certifications-heading">
+      <h2 id="certifications-heading" class="section-label">Certifications</h2>
+      <ul class="entries">
+        <li><div class="entry-static"><span class="entry-name">CompTIA SecurityX</span><span class="entry-desc">Formerly CASP+</span><span class="entry-meta">2025</span></div></li>
+        <li><div class="entry-static"><span class="entry-name">CompTIA Security+</span><span class="entry-desc"></span><span class="entry-meta">2024</span></div></li>
+        <li><div class="entry-static"><span class="entry-name">Salesforce Platform Developer I</span><span class="entry-desc"></span><span class="entry-meta">2024</span></div></li>
       </ul>
     </section>
 </div>
