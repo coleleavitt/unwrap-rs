@@ -20,6 +20,7 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
           <ul class="entry-refs">
             <li><a href="https://www.cve.org/CVERecord?id=CVE-2025-31337">CVE-2025-31337</a> IDScan.net</li>
             <li><a href="https://www.cve.org/CVERecord?id=CVE-2025-31336">CVE-2025-31336</a> TokenWorks</li>
+            <li>CISA VINCE VU#396042 coordinated disclosure</li>
           </ul>
         </li>
       </ul>
@@ -63,7 +64,7 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
       <h2 id="education-heading" class="section-label">Education</h2>
       <ul class="entries">
         <li><div class="entry-static"><span class="entry-name">University of Arizona</span><span class="entry-desc">Computer Science; left to work full time</span><span class="entry-meta">2023–2024</span></div></li>
-        <li><div class="entry-static"><span class="entry-name">Pima JTED</span><span class="entry-desc">Cybersecurity, and Artificial Intelligence Software &amp; Development, with dual enrollment at Pima Community College</span><span class="entry-meta">2021–2023</span></div></li>
+        <li><div class="entry-static"><span class="entry-name">Pima JTED</span><span class="entry-desc">Cybersecurity I and II, and teaching assistant in the same program; dual enrollment at Pima Community College</span><span class="entry-meta">2021–2023</span></div></li>
       </ul>
     </section>
     <section class="section" aria-labelledby="certifications-heading">
