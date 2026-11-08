@@ -200,6 +200,8 @@ PY
     headers=$(curl --fail --silent --show-error --head "$smoke_url/$(basename "$wasm_path")")
     grep -qi '^content-type: application/wasm' <<<"$headers" || die "local WASM content type check failed"
     [[ $(curl --silent --output /dev/null --write-out '%{http_code}' "$smoke_url/definitely-not-a-real-page") == 404 ]] || die "unknown paths must return 404"
+    [[ $(curl --silent "$smoke_url/definitely-not-a-real-page") == *'Err(NotFound)'* ]] || die "unknown paths must get the 404 page"
+    curl --fail --silent --show-error "$smoke_url/uses/" >/dev/null || die "local /uses/ check failed"
 
     kill "$LOCAL_SERVER_PID"
     wait "$LOCAL_SERVER_PID" 2>/dev/null || true

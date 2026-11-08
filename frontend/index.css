@@ -447,6 +447,12 @@ a {
     font-size: 0.9em;
 }
 
+/* sitegen wraps each word of inline code in a span: wrap between words,
+   never inside one (a flag must not split at its hyphen). */
+.post-body :not(pre) > code > span {
+    white-space: nowrap;
+}
+
 .post-body pre {
     overflow-x: auto;
     padding: 1rem 1.25rem;
@@ -589,6 +595,56 @@ a {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
+    }
+}
+
+/* Older/newer links under a post. */
+.post-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    max-width: 70ch;
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--faint);
+}
+
+.post-nav a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 44px;
+    text-decoration: none;
+}
+
+.post-nav-next {
+    grid-column: 2;
+    text-align: right;
+}
+
+.post-nav-label {
+    color: var(--muted);
+    font-size: 0.8125rem;
+}
+
+.post-nav-title {
+    color: var(--text);
+    line-height: 1.45;
+    transition: color 0.15s ease;
+}
+
+.post-nav a:hover .post-nav-title {
+    color: var(--accent);
+}
+
+@media (max-width: 40rem) {
+    .post-nav {
+        grid-template-columns: 1fr;
+    }
+
+    .post-nav-next {
+        grid-column: auto;
+        text-align: left;
     }
 }
 
