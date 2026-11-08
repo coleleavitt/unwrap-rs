@@ -1716,7 +1716,9 @@ version = "0.1.0"
 dependencies = [
  "mmd-svg",
  "pulldown-cmark",
+ "serde",
  "syntect",
+ "toml",
 ]
 
 [[package]]

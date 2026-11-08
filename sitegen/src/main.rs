@@ -6,6 +6,8 @@
 //! they are readable without JavaScript and crawlable, which the CSR app
 //! cannot offer.
 
+mod entries;
+
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -13,6 +15,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use std::sync::LazyLock;
 
+use entries::{Entries, Entry, Page, sections_html};
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd, html};
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::{SyntaxDefinition, SyntaxSet};
@@ -207,11 +210,10 @@ fn stylesheet_href(index_html: &str) -> String {
 }
 
 /// The homepage's header, repeated on every generated page so the site
-/// reads as one: the name (linking home here, since posts own the h1),
-/// the sentence, the links and the PGP line. Keep in step with
-/// `frontend/index.html`.
+/// reads as one: the name, the sentence, the links and the PGP line. The
+/// homepage gets the same header through its `sitegen:header` marker.
 const SITE_HEADER: &str = r#"<header class="intro">
-      <p class="name"><a href="/">Cole Leavitt</a></p>
+      <!-- name -->
       <p class="statement">I build and break systems software in <span class="accent">Rust</span>.</p>
       <nav class="links" aria-label="Elsewhere">
         <a href="/writing/"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 10.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/><path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2"/><path d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1z"/></svg>Writing</a>
@@ -223,9 +225,18 @@ const SITE_HEADER: &str = r#"<header class="intro">
       <p class="pgp"><a href="/pgp.asc" title="OpenPGP key"><span><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 11.5a3.5 3.5 0 1 1 3.163-5H14L15.5 8 14 9.5l-1-1-1 1-1-1-1 1-1-1-1 1H6.663a3.5 3.5 0 0 1-3.163 2M2.5 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/></svg>PGP DEC2 3202 3B77 3F66 98EA</span> <span>54F1 1DFB 3167 910E 6193</span></a><a href="https://keyoxide.org/DEC232023B773F6698EA54F11DFB3167910E6193">verify</a></p>
     </header>"#;
 
-const LATEST_START: &str = "<!-- sitegen:latest -->";
-const LATEST_END: &str = "<!-- /sitegen:latest -->";
 const LATEST_COUNT: usize = 5;
+
+/// The shared header. The homepage's name is its h1; elsewhere the name
+/// links home, since posts own the h1.
+fn site_header(home: bool) -> String {
+    let name = if home {
+        r#"<h1 class="name">Cole Leavitt</h1>"#
+    } else {
+        r#"<p class="name"><a href="/">Cole Leavitt</a></p>"#
+    };
+    SITE_HEADER.replace("<!-- name -->", name)
+}
 
 /// Page shell matching the homepage: same stylesheet, font and column.
 fn page(
@@ -236,6 +247,7 @@ fn page(
     css_href: &str,
     main: &str,
 ) -> String {
+    let header = site_header(false);
     format!(
         r##"<!DOCTYPE html>
 <html lang="en">
@@ -261,7 +273,7 @@ fn page(
 </head>
 <body>
   <main class="page">
-    {SITE_HEADER}
+    {header}
 {main}
   </main>
 </body>
@@ -270,20 +282,17 @@ fn page(
     )
 }
 
-/// The CV page from `content/cv.md`. Its body is mostly raw HTML that reuses
-/// the homepage's entry layout, so it is not wrapped in `.post-body`.
-fn cv_page(src: &str, css_href: &str) -> String {
-    let (fields, body) = parse_frontmatter(src);
-    let title = field(&fields, "title").unwrap_or("CV");
-    let description = field(&fields, "description").unwrap_or_default();
+/// The CV: every `cv` section of `content/entries.toml`, in the homepage's
+/// entry layout.
+fn cv_page(entries: &Entries, css_href: &str) -> String {
     let main = format!(
-        "    <h1 class=\"post-title\">{}</h1>\n{}",
-        esc(title),
-        render_markdown(body)
+        "    <h1 class=\"post-title\">{}</h1>\n    <div class=\"cv\">\n{}    </div>",
+        esc(&entries.cv.title),
+        sections_html(entries, Page::Cv)
     );
     page(
-        &format!("{} — Cole Leavitt", esc(title)),
-        &esc(description),
+        &format!("{} — Cole Leavitt", esc(&entries.cv.title)),
+        &esc(&entries.cv.description),
         &format!("{SITE_URL}/cv/"),
         "profile",
         css_href,
@@ -294,20 +303,16 @@ fn cv_page(src: &str, css_href: &str) -> String {
 /// Post list shared by /writing/ and the homepage, laid out like the other
 /// homepage entries: the title on the left, the month on the right.
 fn dated_entries<'a>(posts: impl IntoIterator<Item = &'a Post>) -> String {
-    let mut out = String::from("    <ul class=\"entries\">\n");
-    for p in posts {
-        writeln!(
-            out,
-            r#"      <li><a href="/writing/{slug}/"><span class="entry-title">{title}</span><time class="entry-meta" datetime="{date}">{month}</time></a></li>"#,
-            slug = p.slug,
-            title = esc(&p.title),
-            date = p.date,
-            month = p.date.get(..7).unwrap_or(&p.date),
-        )
-        .expect("writing to a String cannot fail");
-    }
-    out.push_str("    </ul>\n");
-    out
+    let rows: Vec<Entry> = posts
+        .into_iter()
+        .map(|p| Entry {
+            name: p.title.clone(),
+            date: Some(p.date.get(..7).unwrap_or(&p.date).to_string()),
+            href: Some(format!("/writing/{}/", p.slug)),
+            ..Entry::default()
+        })
+        .collect();
+    entries::entries_list(&rows)
 }
 
 fn post_page(post: &Post, css_href: &str) -> String {
@@ -360,7 +365,7 @@ fn writing_index(posts: &[Post], css_href: &str) -> String {
 /// Empty when no such post exists.
 fn latest_section(posts: &[Post], home_html: &str) -> String {
     // Ignore links inside an earlier run's injected region.
-    let page = inject_latest(home_html, "").unwrap_or_else(|| home_html.to_string());
+    let page = inject(home_html, "latest", "").unwrap_or_else(|| home_html.to_string());
     let unfeatured: Vec<&Post> = posts
         .iter()
         .filter(|p| !page.contains(&format!("href=\"/writing/{}/\"", p.slug)))
@@ -379,18 +384,21 @@ fn latest_section(posts: &[Post], home_html: &str) -> String {
     )
 }
 
-/// Replace the region after the `sitegen:latest` marker (bare, or from an
-/// earlier run) with `section`. Returns `None` when the marker is missing.
-fn inject_latest(index_html: &str, section: &str) -> Option<String> {
-    let start = index_html.find(LATEST_START)?;
-    let after = start + LATEST_START.len();
-    let end = index_html[after..]
-        .find(LATEST_END)
-        .map_or(after, |e| after + e + LATEST_END.len());
+/// Fill the region after `<!-- sitegen:NAME -->` with `content`, replacing
+/// what an earlier run put there (up to `<!-- /sitegen:NAME -->`). `None`
+/// when the page has no such marker.
+fn inject(html: &str, name: &str, content: &str) -> Option<String> {
+    let start_marker = format!("<!-- sitegen:{name} -->");
+    let end_marker = format!("<!-- /sitegen:{name} -->");
+    let start = html.find(&start_marker)?;
+    let after = start + start_marker.len();
+    let end = html[after..]
+        .find(&end_marker)
+        .map_or(after, |e| after + e + end_marker.len());
     Some(format!(
-        "{}{LATEST_START}{section}{LATEST_END}{}",
-        &index_html[..start],
-        &index_html[end..]
+        "{}{start_marker}{content}{end_marker}{}",
+        &html[..start],
+        &html[end..]
     ))
 }
 
@@ -428,7 +436,7 @@ fn atom_feed(posts: &[Post]) -> String {
     )
 }
 
-fn sitemap(posts: &[Post], has_cv: bool) -> String {
+fn sitemap(posts: &[Post]) -> String {
     let mut urls = format!(
         "  <url>
     <loc>{SITE_URL}/</loc>
@@ -438,10 +446,8 @@ fn sitemap(posts: &[Post], has_cv: bool) -> String {
   </url>
 "
     );
-    if has_cv {
-        write!(urls, "  <url>\n    <loc>{SITE_URL}/cv/</loc>\n  </url>\n")
-            .expect("writing to a String cannot fail");
-    }
+    write!(urls, "  <url>\n    <loc>{SITE_URL}/cv/</loc>\n  </url>\n")
+        .expect("writing to a String cannot fail");
     for p in posts {
         write!(urls, "  <url>\n    <loc>{}</loc>\n  </url>\n", p.url())
             .expect("writing to a String cannot fail");
@@ -522,6 +528,9 @@ fn main() -> std::io::Result<()> {
     let css_href = stylesheet_href(&index_html);
 
     let posts = load_posts(&content_dir);
+    let entries_path = root.join("content/entries.toml");
+    let entries = Entries::parse(&fs::read_to_string(&entries_path)?)
+        .map_err(|e| std::io::Error::other(format!("{}: {e}", entries_path.display())))?;
 
     // Remove stale post pages from earlier runs so deleted posts disappear.
     let _ = fs::remove_dir_all(dist.join("writing"));
@@ -538,16 +547,18 @@ fn main() -> std::io::Result<()> {
             &post_page(post, &css_href),
         )?;
     }
-    if let Some(home) = inject_latest(&index_html, &latest_section(&posts, &index_html)) {
+    // Header and sections first: the latest-posts list skips posts the
+    // finished page already links to.
+    let home = inject(&index_html, "header", &site_header(true))
+        .and_then(|h| inject(&h, "sections", &sections_html(&entries, Page::Home)));
+    if let Some(home) = home {
+        let latest = latest_section(&posts, &home);
+        let home = inject(&home, "latest", &latest).unwrap_or(home);
         fs::write(dist.join("index.html"), home)?;
     }
-    let _ = fs::remove_dir_all(dist.join("cv"));
-    let cv = fs::read_to_string(root.join("content/cv.md")).ok();
-    if let Some(src) = &cv {
-        write_dist(&dist, "cv/index.html", &cv_page(src, &css_href))?;
-    }
+    write_dist(&dist, "cv/index.html", &cv_page(&entries, &css_href))?;
     write_dist(&dist, "feed.xml", &atom_feed(&posts))?;
-    write_dist(&dist, "sitemap.xml", &sitemap(&posts, cv.is_some()))?;
+    write_dist(&dist, "sitemap.xml", &sitemap(&posts))?;
 
     println!("sitegen: {} post(s), css={css_href}", posts.len());
     Ok(())
@@ -644,17 +655,17 @@ draft: true
     #[test]
     fn latest_injection_replaces_its_own_region() {
         let home = "<main>a<!-- sitegen:latest -->b</main>";
-        let once = inject_latest(home, "X").expect("marker present");
+        let once = inject(home, "latest", "X").expect("marker present");
         assert_eq!(
             once,
             "<main>a<!-- sitegen:latest -->X<!-- /sitegen:latest -->b</main>"
         );
-        let twice = inject_latest(&once, "Y").expect("marker kept");
+        let twice = inject(&once, "latest", "Y").expect("marker kept");
         assert_eq!(
             twice,
             "<main>a<!-- sitegen:latest -->Y<!-- /sitegen:latest -->b</main>"
         );
-        assert_eq!(inject_latest("<main></main>", "X"), None);
+        assert_eq!(inject("<main></main>", "latest", "X"), None);
     }
 
     #[test]
@@ -672,26 +683,38 @@ draft: true
         assert!(section.contains("/writing/other/") && !section.contains("/writing/featured/"));
         assert_eq!(latest_section(&posts[..1], home), "");
         // Links from an earlier run's injected list do not count as featured.
-        let rerun = inject_latest(home, &section).unwrap();
+        let rerun = inject(home, "latest", &section).unwrap();
         assert!(latest_section(&posts, &rerun).contains("/writing/other/"));
     }
 
     #[test]
     fn sitemap_lists_home_and_writing() {
-        let map = sitemap(&[], false);
+        let map = sitemap(&[]);
         assert!(map.contains(&format!("<loc>{SITE_URL}/</loc>")));
         assert!(map.contains(&format!("<loc>{SITE_URL}/writing/</loc>")));
-        assert!(!map.contains("/cv/"));
-        assert!(sitemap(&[], true).contains(&format!("<loc>{SITE_URL}/cv/</loc>")));
+        assert!(map.contains(&format!("<loc>{SITE_URL}/cv/</loc>")));
     }
 
     #[test]
-    fn cv_page_keeps_raw_html_outside_post_body() {
-        let src = "+++\ntitle: CV\ndescription: d\n+++\n\n<div class=\"cv\">\n<section class=\"section\">x</section>\n</div>\n";
-        let html = cv_page(src, "/a.css");
+    fn cv_page_renders_cv_sections_with_the_shared_header() {
+        let entries = Entries::parse(
+            "[cv]\ntitle = \"CV\"\ndescription = \"d\"\n\n[[section]]\nid = \"edu\"\nlabel = \"Education\"\npages = [\"cv\"]\n\n[[section.entry]]\nname = \"School\"\nstart = \"2021\"\nend = \"2023\"\n",
+        )
+        .unwrap();
+        let html = cv_page(&entries, "/a.css");
         assert!(html.contains("<title>CV — Cole Leavitt</title>"));
         assert!(html.contains("<link rel=\"canonical\" href=\"https://unwrap.rs/cv/\" />"));
-        assert!(html.contains("<div class=\"cv\">\n<section class=\"section\">x</section>"));
-        assert!(!html.contains("post-body"));
+        assert!(html.contains("2021 – 2023"));
+        assert!(html.contains(r#"<p class="name"><a href="/">Cole Leavitt</a></p>"#));
+    }
+
+    #[test]
+    fn homepage_header_uses_the_name_as_h1() {
+        let home = site_header(true);
+        assert!(home.contains(r#"<h1 class="name">Cole Leavitt</h1>"#));
+        assert_eq!(
+            home.replace(r#"<h1 class="name">Cole Leavitt</h1>"#, ""),
+            site_header(false).replace(r#"<p class="name"><a href="/">Cole Leavitt</a></p>"#, "")
+        );
     }
 }

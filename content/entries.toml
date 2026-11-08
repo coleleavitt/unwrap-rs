@@ -1,0 +1,219 @@
+# Every dated entry on the site: the homepage (frontend/index.html) and
+# /cv/ are both rendered from this file by sitegen. Edit facts here only.
+#
+# Section `pages` lists where it appears ("home", "cv"); an entry may narrow
+# that with its own `pages`. Within a section, entries are shown newest first.
+# Dates are "YYYY-MM" or "YYYY"; a range uses `start` and `end` ("now" for
+# ongoing). `refs` are the small lines under an entry; `link` is the linked
+# part of a ref, `text` the plain part after it.
+
+[cv]
+title = "CV"
+description = "Cole Leavitt's CV: security research, Linux kernel work, open-source Rust tools, and education."
+
+[[section]]
+id = "experience"
+label = "Experience"
+pages = ["cv"]
+
+[[section.entry]]
+name = "Foundations Investment Advisors"
+desc = "Principal Security Engineer. Built ERS, the firm's entity-resolution and data platform in Rust. It syncs about 19 million records a day from 7 providers into a 1.4-billion-row ClickHouse warehouse, matches records across them, and serves them through a signed GraphQL API"
+start = "2025-11"
+end = "now"
+refs = [
+  { text = "Found and reported an exposure of Social Security numbers in a third-party platform the firm uses; the vendor fixed it" },
+]
+
+[[section.entry]]
+name = "Bru Credit"
+desc = "Linux Administrator and Full-Stack Developer (remote). Built an automated credit-analysis platform and moved its infrastructure from AWS and GCP to on-premise Proxmox and ESXi"
+start = "2025-02"
+end = "2025-06"
+
+[[section]]
+id = "research"
+label = "Research"
+pages = ["home", "cv"]
+
+[[section.entry]]
+name = "PayRange"
+desc = "Rewarded finding in PayRange's bug bounty program; details private under the program's disclosure terms"
+date = "2026-09"
+
+[[section.entry]]
+name = "AAMVA PDF417"
+desc = "ID scanners accept spoofed driver's license barcodes"
+date = "2025-07"
+href = "/writing/aamva-pdf417/"
+refs = [
+  { link = "CVE-2025-31337", href = "https://www.cve.org/CVERecord?id=CVE-2025-31337", text = "IDScan.net" },
+  { link = "CVE-2025-31336", href = "https://www.cve.org/CVERecord?id=CVE-2025-31336", text = "TokenWorks" },
+  { link = "PoC", href = "https://github.com/coleleavitt/AAMVA-PDF417-Vulnerability-Research", text = "signed evidence" },
+  { text = "CISA VINCE VU#396042 coordinated disclosure" },
+]
+
+[[section]]
+id = "kernel"
+label = "Linux kernel"
+pages = ["home", "cv"]
+more = 'Released in Linux 6.19 and 7.1. <a href="https://lore.kernel.org/all/?q=f%3Acole%40unwrap.rs">All patches and reviews on lore</a>'
+
+[[section.entry]]
+name = "In review"
+desc = "PCI hotplug and Thunderbolt resume race; USB hcd-pci (acked by Alan Stern)"
+date = "2026-10"
+href = "/writing/thunderbolt-resume-race/"
+
+[[section.entry]]
+name = "iwlwifi"
+desc = "Fix TSO segmentation explosion when A-MSDU is disabled"
+date = "2026-05"
+href = "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=92cee08dc4f00e77fd1317e4343c5d458b0abab7"
+
+[[section.entry]]
+name = "pstore/ram"
+desc = "Fix a resource leak when ioremap() fails"
+date = "2026-03"
+href = "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=2ddb69f686ef7a621645e97fc7329c50edf5d0e5"
+
+[[section.entry]]
+name = "soundwire"
+desc = "Demote expected UNATTACHED state warnings to debug"
+date = "2026-03"
+href = "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=2c96956fe764f8224f9ec93b2a9160a578949a7a"
+
+[[section.entry]]
+name = "i915"
+desc = "Reported the CX0 PHY turnaround timing bug Intel fixed"
+date = "2026-02"
+href = "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=122439234f6ae2583a3701d7619f9a8242748547"
+
+[[section.entry]]
+name = "ASoC cs42l43"
+desc = "Enable the headphone pin for the LINEOUT jack type"
+date = "2026-01"
+href = "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=390caeed0897fcac75f3c414dbdd85d593183d9c"
+
+[[section]]
+id = "open-source"
+label = "Open source"
+pages = ["home", "cv"]
+
+[[section.entry]]
+name = "keyoxide"
+desc = "SSH and GPG agent in Rust that serves gpg-agent's protocol"
+date = "2026-11"
+href = "/writing/keyoxide-gpg-agent/"
+pages = ["cv"]
+
+[[section.entry]]
+name = "idb-rs"
+desc = "IDA 9.5 database support for Vector35's IDB parser (PR #61, in review)"
+date = "2026-10"
+href = "https://github.com/Vector35/idb-rs/pull/61"
+pages = ["cv"]
+
+[[section.entry]]
+name = "codeflow"
+desc = "Call trees and control-flow graphs for coding agents, incl. rustc MIR"
+date = "2026-10"
+href = "/writing/codeflow-mir/"
+pages = ["cv"]
+
+[[section.entry]]
+name = "reMarkable"
+desc = "Reverse-engineered sync protocols and a self-hosted cloud: 11 tools"
+date = "2026-09"
+href = "https://github.com/coleleavitt/remarkable-ecosystem"
+refs = [
+  { link = "remarkable-server", href = "https://github.com/coleleavitt/remarkable-server", text = "sync protocols V1 to V3" },
+  { link = "remarkable-rs", href = "https://github.com/coleleavitt/remarkable-rs", text = "15 crates" },
+]
+
+[[section.entry]]
+name = "servant-rs"
+desc = "Rust port of Haskell Servant: one typed API for server, client and docs"
+date = "2026-06"
+href = "https://github.com/coleleavitt/servant-rs"
+
+[[section.entry]]
+name = "unlace"
+desc = "Open-source decompiler in Rust with Mach-O, Objective-C and Swift support"
+date = "2026-04"
+href = "https://github.com/coleleavitt/unlace"
+
+[[section.entry]]
+name = "ida-mcp-server"
+desc = "IDA Pro plugin exposing 170+ analysis tools to coding agents over MCP"
+date = "2026-02"
+href = "https://github.com/coleleavitt/ida-mcp-server"
+
+[[section.entry]]
+name = "jsbeautify"
+desc = "JavaScript beautifier, deobfuscator and bundle unpacker built on oxc"
+date = "2026-01"
+href = "https://github.com/coleleavitt/jsbeautify"
+
+[[section.entry]]
+name = "AUR: sf"
+desc = "Maintainer of the Salesforce CLI package for Arch Linux"
+date = "2024-09"
+href = "https://aur.archlinux.org/packages/sf"
+pages = ["cv"]
+
+[[section]]
+id = "skills"
+label = "Skills"
+pages = ["cv"]
+
+[[section.entry]]
+name = "Languages"
+desc = "Rust, C, C++, Python, TypeScript and JavaScript"
+
+[[section.entry]]
+name = "Reverse engineering"
+desc = "IDA Pro (IDAPython, IDAlib, plugins), binary and database formats, firmware"
+
+[[section.entry]]
+name = "Systems"
+desc = "Linux kernel (PCI hotplug, power management, Wi-Fi, audio), rustc MIR, LLVM IR"
+
+[[section.entry]]
+name = "Security"
+desc = "Vulnerability research, coordinated disclosure, OpenPGP and GnuPG internals"
+
+[[section]]
+id = "education"
+label = "Education"
+pages = ["cv"]
+
+[[section.entry]]
+name = "University of Arizona"
+desc = "Computer Science; left to work full time"
+start = "2023"
+end = "2024"
+
+[[section.entry]]
+name = "Pima JTED"
+desc = "Cybersecurity I and II, and teaching assistant in the same program; dual enrollment at Pima Community College"
+start = "2021"
+end = "2023"
+
+[[section]]
+id = "certifications"
+label = "Certifications"
+pages = ["cv"]
+
+[[section.entry]]
+name = "CompTIA SecurityX"
+desc = "Formerly CASP+"
+date = "2025"
+
+[[section.entry]]
+name = "CompTIA Security+"
+date = "2024"
+
+[[section.entry]]
+name = "Salesforce Platform Developer I"
+date = "2024"
