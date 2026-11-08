@@ -598,6 +598,64 @@ a {
     }
 }
 
+/* The live Xtensa disassembler in its post (xtensa-dis, WebAssembly). */
+.xtensa-demo {
+    display: grid;
+    gap: 0.75rem;
+    margin: 1.75rem 0;
+}
+
+.xtensa-inputs {
+    display: grid;
+    grid-template-columns: 1fr 12rem;
+    gap: 0.75rem;
+}
+
+.xtensa-inputs label {
+    display: grid;
+    gap: 0.35rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+}
+
+.xtensa-bytes,
+.xtensa-base {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--faint);
+    border-radius: 4px;
+    background: #08060a;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.875rem;
+    resize: vertical;
+}
+
+.xtensa-bytes:focus-visible,
+.xtensa-base:focus-visible,
+.xtensa-out:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Before the WebAssembly loads (or without it) the example is read-only. */
+.xtensa-demo:not([data-live]) .xtensa-bytes,
+.xtensa-demo:not([data-live]) .xtensa-base {
+    color: var(--muted);
+}
+
+.post-body .xtensa-out {
+    margin: 0;
+}
+
+@media (max-width: 40rem) {
+    .xtensa-inputs {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Older/newer links under a post. */
 .post-nav {
     display: grid;

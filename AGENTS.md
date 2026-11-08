@@ -15,6 +15,7 @@ This file exists for agents that read `AGENTS.md`. `CLAUDE.md` is the primary gu
 - `frontend/src/main.rs` + `frontend/src/app/typing_animation/`: the animation, mounted into `#animation-mount` (not under reduced motion).
 - `content/writing/*.md` + `sitegen/`: writing pages, Atom feed, sitemap, homepage latest posts. Trunk runs it as a `post_build` hook (`scripts/trunk-sitegen.sh`), so `trunk build` and `trunk serve` produce the whole site.
 - `content/pages/*.md`: standalone pages at `/<slug>/` (`/uses/`). sitegen also writes `404.html`, which the server returns for unknown paths.
+- `xtensa-dis/`: Xtensa disassembler generated from LLVM TableGen, checked against `llvm-mc` on every input (`tools/check_llvm.py`); the live demo in the Xtensa post (WebAssembly under `dist/demos/xtensa-dis/`).
 - `frontend/index.css`, `frontend/fonts/`: one stylesheet for all pages; self-hosted JetBrains Mono.
 - `server/src/main.rs`: one servant API description for `/api/health`, `/api/social-links`, and static files with directory indexes. Needs the sibling checkout `../servant-rs`.
 - `deploy.sh`, `deploy/unwrap-rs.service`: release, status, rollback on the `linode` host.
