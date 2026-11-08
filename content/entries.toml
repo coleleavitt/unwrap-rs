@@ -61,7 +61,7 @@ more = 'Released in Linux 6.19 and 7.1. <a href="https://lore.kernel.org/all/?q=
 
 [[section.entry]]
 name = "In review"
-desc = "PCI hotplug and Thunderbolt resume race; USB hcd-pci (acked by Alan Stern)"
+desc = "USB hcd-pci fix acked by Alan Stern; pciehp resume ordering (the Thunderbolt trigger was a BIOS bug)"
 date = "2026-10"
 href = "/writing/thunderbolt-resume-race/"
 
