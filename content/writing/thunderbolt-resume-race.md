@@ -4,7 +4,7 @@ date: 2026-11-07
 description: My laptop sometimes woke to a black screen. The cause was a hotplug removal running in the middle of system resume, unserialized against the driver it removed.
 +++
 
-My ThinkPad P16 Gen 3 has a discrete Thunderbolt 5 host controller, an Intel JHL9580 ("Barlow Ridge"), below PCIe Root Port `0000:80:1b.4`. Every so often, resume from suspend-to-idle ended in a black screen. With `panic=10` on the kernel command line the machine rebooted itself ten seconds later, and the oops survived in pstore (`/sys/fs/pstore/dmesg-ramoops-*`):
+My ThinkPad P16 Gen 3 has a discrete Thunderbolt 5 host controller, an Intel JHL9580 ("Barlow Ridge"), below PCIe Root Port `0000:80:1b.4`. Every so often, resume from suspend-to-idle ended in a black screen. The oops below killed a resume worker, so resume never finished, and the only way out was a forced reboot. The kernel writes oopses to persistent RAM (ramoops), so the log survived the reboot in pstore (`/sys/fs/pstore/dmesg-ramoops-*`):
 
 ```
 pcieport 0000:80:1b.4: Data Link Layer Link Active not set in 100 msec

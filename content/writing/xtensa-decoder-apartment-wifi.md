@@ -35,10 +35,10 @@ So I stopped fighting the tools and wrote my own decoder. That turned out to be 
 
 I did not hand-write an instruction table from a PDF. LLVM already has a precise, machine-readable description of Xtensa in its TableGen files: every instruction format, every field, every encoding. I sparse-cloned the relevant parts of LLVM, read those definitions, and built a decoder straight from them. Then I validated it against `llvm-mc`, LLVM's own assembler: decode a stream, re-assemble it, and check that the bytes come back identical. When your decoder agrees with the reference assembler instruction for instruction, you can trust what it tells you.
 
-The result is [xtensa-decoder](https://github.com/coleleavitt/xtensa-decoder): a complete Xtensa ISA decoder in Python, covering the core ALU, loads and stores, branches, the windowed call instructions, the MAC16 DSP ops, the narrow 16-bit encodings, and, importantly for this hunt, the memory-barrier instructions. It parses the Qualcomm firmware header format, and it can scan an image for a specific pattern: stores to DMA descriptor memory that are not followed by the barrier that would make the write visible to the hardware. That is the shape of a bug that corrupts packets on the way out.
+The result is [xtensa-decoder](https://github.com/coleleavitt/xtensa-decoder): a complete Xtensa ISA decoder in Python, covering the core ALU, loads and stores, branches, the windowed call instructions, the MAC16 DSP ops, the memory-barrier instructions and the narrow 16-bit encodings. It also parses the Qualcomm firmware header format, so it reads the image straight from the vendor's file.
 
-## What I found, and where it went
+## What I found
 
-With a decoder I could trust, I could finally trace the transmit path through the firmware and reason about which stores were ordered against the DMA engine and which were not. The specifics of what I found went to the chip and access-point vendors as a security report, not onto this blog. Undisclosed findings in shipping hardware stay private until the people who can fix them have had their chance.
+With a decoder I could trust, I could finally trace the transmit path through the firmware instruction by instruction. What I found there stays off this blog until the vendor has it and has had time to fix it.
 
 The decoder, though, is just a tool, and it's public. The lesson is the one I keep relearning: when the tool can't answer the question, and the question matters, build the tool. LLVM had already done the hard, exact part. I just had to read it.

@@ -10,7 +10,7 @@ My ThinkPad P16 Gen 3 has an infrared camera and an IR emitter, the same hardwar
 
 A plain webcam login compares a face to a stored photo. Hold up a printout and it unlocks. The whole point of the IR hardware is to make that hard.
 
-The emitter lights every other frame. The camera's metadata node says which frames are lit, so each lit frame can be paired with the ambient frame right next to it, under 300 ms apart. Recognition runs on `lit − min(lit, ambient)`: the light the emitter *added*, with the room's own IR subtracted out. A screen emits no IR and shows no face to the IR camera at all, so it never gets past the first gate.
+The emitter lights every other frame. The camera's metadata node says which frames are lit, so each lit frame can be paired with the ambient frame right next to it, under 300 ms apart. Recognition runs on `lit − min(lit, ambient)`: the light the emitter *added*, with the room's own IR subtracted out. A phone or monitor gives off almost no IR of its own, so a face shown on one barely appears in that difference. It is a strong first check against screen replays, not a guarantee: the liveness votes below are the second line.
 
 ## The pipeline
 
@@ -33,7 +33,7 @@ A few things I took from studying how Windows Hello behaves:
 
 - **Recognise first, then check liveness.** Like Windows, the user is identified first (four enrolled prints, best one above the threshold). Only after that do liveness votes count. A well-lit frame pair is a live vote; the visible-light model can veto it and turn it into a spoof vote. Two live votes unlock; three spoof votes reject.
 - **Gates before models.** The face has to be at least 72 px wide, away from the frame edges, and in a sane brightness band. The emitter has to add real IR and the ambient IR has to stay low. Cheap checks throw out bad frames before any neural net runs.
-- **1:1 verification.** A face is only ever compared against the template of the account being unlocked, so one enrolled face can never open another account.
+- **1:1 verification.** A face is only ever compared against the template of the account being unlocked, never searched across every enrolled user. Another person's face still has to clear this account's match threshold, and the chance of a false accept is the rate estimated at enrollment, not zero.
 - **The template follows you.** Enrollment keeps 16 prints taken while you move your head a little. After a borderline-but-correct unlock the frame is folded back in, so the template tracks slow changes like a new haircut or glasses.
 
 Enrollment estimates a false-accept rate and only calls it done under 1e-5. Every failure says *why* it failed: too dark, too far, at the edge, occluded, not frontal, not live. Debugging a face unlocker you can't see into is miserable, so the feedback was worth the effort.

@@ -87,6 +87,7 @@ fn content_type_for(name: &str) -> &'static str {
         Some("woff") => "font/woff",
         Some("ttf") => "font/ttf",
         Some("txt") => "text/plain; charset=utf-8",
+        Some("md") => "text/markdown; charset=utf-8",
         Some("asc") => "application/pgp-keys",
         _ => "application/octet-stream",
     }
@@ -323,6 +324,10 @@ mod tests {
             "application/xml; charset=utf-8"
         );
         assert_eq!(content_type_for("pgp.asc"), "application/pgp-keys");
+        assert_eq!(
+            content_type_for("THIRD-PARTY-NOTICES.md"),
+            "text/markdown; charset=utf-8"
+        );
         assert_eq!(content_type_for("no-extension"), "application/octet-stream");
     }
 

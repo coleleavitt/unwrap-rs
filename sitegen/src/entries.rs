@@ -80,6 +80,13 @@ fn is_date(s: &str) -> bool {
     }
 }
 
+/// `end` is earlier than `start`, comparing at the coarser of the two
+/// precisions (`2025` does not end before `2025-11`).
+fn ends_before(start: &str, end: &str) -> bool {
+    let n = start.len().min(end.len());
+    end[..n] < start[..n]
+}
+
 impl Entries {
     /// Parse and check the file. Errors name the entry, so a bad date fails
     /// the build instead of reaching the page.
@@ -90,7 +97,8 @@ impl Entries {
                 let bad = |what: &str| format!("{}: {:?}: {what}", s.id, e.name);
                 match (&e.date, &e.start, &e.end) {
                     (Some(d), None, None) if is_date(d) => {}
-                    (None, Some(a), Some(z)) if is_date(a) && (z == "now" || is_date(z)) => {}
+                    (None, Some(a), Some(z))
+                        if is_date(a) && (z == "now" || (is_date(z) && !ends_before(a, z))) => {}
                     (None, None, None) => {}
                     _ => {
                         return Err(bad(
@@ -300,6 +308,9 @@ end = "2023"
         let both = SRC.replace(r#"date = "2025""#, "date = \"2025\"\nstart = \"2024\"");
         assert!(Entries::parse(&both).is_err());
         assert!(!is_date("2025-13"));
+        let backwards = SRC.replace(r#"end = "2023""#, r#"end = "2019""#);
+        assert!(Entries::parse(&backwards).is_err());
+        assert!(!ends_before("2025-11", "2025") && ends_before("2025-11", "2025-02"));
     }
 
     #[test]

@@ -88,7 +88,7 @@ fn render_markdown(md: &str) -> String {
             Event::Start(Tag::CodeBlock(kind)) => {
                 let lang = match kind {
                     CodeBlockKind::Fenced(info) => info
-                        .split([',', ' '])
+                        .split(|c: char| c == ',' || c.is_whitespace())
                         .next()
                         .unwrap_or_default()
                         .to_string(),
@@ -431,6 +431,10 @@ fn atom_feed(posts: &[Post]) -> String {
   <link href="{base}/writing/" />
   <id>{base}/writing/</id>
   <updated>{updated}T00:00:00Z</updated>
+  <author>
+    <name>Cole Leavitt</name>
+    <uri>{base}/</uri>
+  </author>
 {entries}</feed>
 "#
     )
@@ -464,43 +468,44 @@ fn sitemap(posts: &[Post]) -> String {
     )
 }
 
-/// Load and render every non-draft post from `content_dir`.
-fn load_posts(content_dir: &Path) -> Vec<Post> {
-    let Ok(entries) = fs::read_dir(content_dir) else {
-        return Vec::new();
-    };
+/// Load and render every non-draft post from `content_dir`. Any unreadable
+/// file, missing field, invalid date or unsafe file name fails the build, so
+/// a broken post never silently disappears from a release.
+fn load_posts(content_dir: &Path) -> Result<Vec<Post>, String> {
+    let dir_err = |e: std::io::Error| format!("{}: {e}", content_dir.display());
     let mut posts = Vec::new();
-    for entry in entries.flatten() {
-        let path = entry.path();
+    for entry in fs::read_dir(content_dir).map_err(dir_err)? {
+        let path = entry.map_err(dir_err)?.path();
         if path.extension().is_none_or(|e| e != "md") {
             continue;
         }
-        let Ok(src) = fs::read_to_string(&path) else {
-            continue;
-        };
+        let name = path.display().to_string();
+        let src = fs::read_to_string(&path).map_err(|e| format!("{name}: {e}"))?;
         let (fields, body) = parse_frontmatter(&src);
         if field(&fields, "draft").is_some_and(|d| d == "true") {
             continue;
         }
-        let Some(title) = field(&fields, "title").map(str::to_string) else {
-            eprintln!(
-                "sitegen: skipping {} (missing title)",
-                path.file_name().unwrap_or_default().to_string_lossy()
-            );
-            continue;
-        };
-        let Some(date) = field(&fields, "date").map(str::to_string) else {
-            eprintln!("sitegen: skipping {title:?} (missing date)");
-            continue;
-        };
+        let slug = path
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        if !is_slug(&slug) {
+            return Err(format!(
+                "{name}: file name must be lowercase letters, digits and hyphens"
+            ));
+        }
+        let title = field(&fields, "title").ok_or_else(|| format!("{name}: missing title"))?;
+        let date = field(&fields, "date").ok_or_else(|| format!("{name}: missing date"))?;
+        if !is_calendar_date(date) {
+            return Err(format!(
+                "{name}: date {date:?} is not a YYYY-MM-DD calendar date"
+            ));
+        }
         posts.push(Post {
-            slug: path
-                .file_stem()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string(),
-            title,
-            date,
+            slug,
+            title: title.to_string(),
+            date: date.to_string(),
             description: field(&fields, "description")
                 .unwrap_or_default()
                 .to_string(),
@@ -508,7 +513,35 @@ fn load_posts(content_dir: &Path) -> Vec<Post> {
         });
     }
     posts.sort_by(|a, b| b.date.cmp(&a.date).then_with(|| b.slug.cmp(&a.slug)));
-    posts
+    Ok(posts)
+}
+
+/// A post slug becomes a path segment and a URL, so keep it to `[a-z0-9-]`.
+fn is_slug(s: &str) -> bool {
+    !s.is_empty()
+        && s.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+}
+
+/// `YYYY-MM-DD` naming a real day.
+fn is_calendar_date(s: &str) -> bool {
+    let b = s.as_bytes();
+    if b.len() != 10 || b[4] != b'-' || b[7] != b'-' {
+        return false;
+    }
+    let num = |r: std::ops::Range<usize>| s.get(r).and_then(|t| t.parse::<u32>().ok());
+    let (Some(y), Some(m), Some(d)) = (num(0..4), num(5..7), num(8..10)) else {
+        return false;
+    };
+    let leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+    let days = match m {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap => 29,
+        2 => 28,
+        _ => return false,
+    };
+    (1..=days).contains(&d)
 }
 
 fn write_dist(dist: &Path, rel: &str, contents: &str) -> std::io::Result<()> {
@@ -527,7 +560,7 @@ fn main() -> std::io::Result<()> {
     let index_html = fs::read_to_string(dist.join("index.html")).unwrap_or_default();
     let css_href = stylesheet_href(&index_html);
 
-    let posts = load_posts(&content_dir);
+    let posts = load_posts(&content_dir).map_err(std::io::Error::other)?;
     let entries_path = root.join("content/entries.toml");
     let entries = Entries::parse(&fs::read_to_string(&entries_path)?)
         .map_err(|e| std::io::Error::other(format!("{}: {e}", entries_path.display())))?;
@@ -549,13 +582,19 @@ fn main() -> std::io::Result<()> {
     }
     // Header and sections first: the latest-posts list skips posts the
     // finished page already links to.
-    let home = inject(&index_html, "header", &site_header(true))
-        .and_then(|h| inject(&h, "sections", &sections_html(&entries, Page::Home)));
-    if let Some(home) = home {
-        let latest = latest_section(&posts, &home);
-        let home = inject(&home, "latest", &latest).unwrap_or(home);
-        fs::write(dist.join("index.html"), home)?;
-    }
+    let missing = |name: &str| {
+        std::io::Error::other(format!(
+            "{}: no <!-- sitegen:{name} --> marker",
+            dist.join("index.html").display()
+        ))
+    };
+    let home =
+        inject(&index_html, "header", &site_header(true)).ok_or_else(|| missing("header"))?;
+    let home = inject(&home, "sections", &sections_html(&entries, Page::Home))
+        .ok_or_else(|| missing("sections"))?;
+    let latest = latest_section(&posts, &home);
+    let home = inject(&home, "latest", &latest).ok_or_else(|| missing("latest"))?;
+    fs::write(dist.join("index.html"), home)?;
     write_dist(&dist, "cv/index.html", &cv_page(&entries, &css_href))?;
     write_dist(&dist, "feed.xml", &atom_feed(&posts))?;
     write_dist(&dist, "sitemap.xml", &sitemap(&posts))?;
@@ -605,6 +644,8 @@ draft: true
             "before\n\n```mermaid\nflowchart TD\n A[Up] --> B{Ask}\n```\n\nafter\n",
         );
         assert!(html.contains("<figure class=\"diagram\" tabindex=\"0\"><svg"));
+        // the diagram itself rendered: both labels and an edge
+        assert!(html.contains(">Up<") && html.contains(">Ask<") && html.contains("<path"));
         assert!(html.contains("before"));
         assert!(html.contains("after"));
         assert!(!html.contains("```"));
@@ -630,6 +671,48 @@ draft: true
         assert!(html.contains("<pre><code>&lt;oops&gt; &amp; done\n</code></pre>"));
         assert!(html.contains("<pre><code>plain\n</code></pre>"));
         assert!(!html.contains("hl-"));
+    }
+
+    #[test]
+    fn fence_info_splits_on_any_whitespace() {
+        let html = render_markdown("```rust\tignore\nfn f() {}\n```\n");
+        assert!(html.contains("language-rust"));
+    }
+
+    #[test]
+    fn post_dates_and_slugs_are_validated() {
+        assert!(is_calendar_date("2024-02-29") && !is_calendar_date("2023-02-29"));
+        assert!(
+            !is_calendar_date("2026-13-01")
+                && !is_calendar_date("2026-1-01")
+                && !is_calendar_date("26-11-07")
+        );
+        assert!(is_slug("codeflow-mir") && !is_slug("..") && !is_slug("a b") && !is_slug("Caps"));
+    }
+
+    #[test]
+    fn unreadable_or_broken_posts_fail_the_build() {
+        assert!(load_posts(Path::new("/nonexistent-content-dir")).is_err());
+        let dir = std::env::temp_dir().join(format!("sitegen-test-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("ok.md"),
+            "+++\ntitle: T\ndate: 2026-11-07\n+++\nbody\n",
+        )
+        .unwrap();
+        assert_eq!(load_posts(&dir).unwrap().len(), 1);
+        fs::write(dir.join("bad.md"), "+++\ntitle: T\ndate: 2026-02-30\n+++\n").unwrap();
+        assert!(
+            load_posts(&dir)
+                .err()
+                .is_some_and(|e| e.contains("calendar date"))
+        );
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn feed_names_its_author() {
+        assert!(atom_feed(&[]).contains("<author>\n    <name>Cole Leavitt</name>"));
     }
 
     #[test]
