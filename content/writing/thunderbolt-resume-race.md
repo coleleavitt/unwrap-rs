@@ -58,10 +58,13 @@ I posted all three on 2026-10-18, against v7.3-rc7:
 - [PATCH 0/2] PCI: pciehp / thunderbolt: Fix resume with a slow Thunderbolt host link ([lore](https://lore.kernel.org/all/20261018163750.130470-1-cole@unwrap.rs/))
 - [PATCH] USB: hcd-pci: Do not disable an already disabled device on remove ([lore](https://lore.kernel.org/all/20261018164134.134106-1-cole@unwrap.rs/)), acked by Alan Stern
 
-They are still under review, not merged. I run them on this laptop every day.
+Mika Westerberg, the Thunderbolt maintainer, [replied](https://lore.kernel.org/all/20261019042920.GX176164@black.igk.intel.com/) that this should not happen on a software connection manager system at all: some Lenovo BIOSes enable PCIe hotplug on the Barlow Ridge root port, which Intel's BIOS configuration checklist rules out, and Lenovo has been fixing them. He was right. Every oops I captured was on BIOS N4FET30W (1.11), where pciehp was bound to `0000:80:1b.4`. On N4FET52W (1.33) that port no longer gets the hotplug service, so a slow link there can no longer turn into a "replaced" device, and the thunderbolt patch is not needed.
+
+The ordering problem in pciehp is still in mainline: a replacement found in `pciehp_resume_noirq()` still wakes the IRQ thread during the noirq phase. Whether that is worth changing without a trigger on correctly configured hardware is up to the PCI maintainers. The USB fix stands on its own and is waiting to be applied.
 
 ## What I took from it
 
+- **Check the firmware first.** The race was real, but the trigger was a BIOS setting that Intel's own checklist rules out, and a BIOS update made the bug unreachable. A maintainer who had seen the same hardware knew that in one reply.
 - **The noirq phase is not serialized against hotplug.** A removal that starts there races every driver below the port.
 - **`irq_wake_thread()` is not an interrupt.** Code that relies on `suspend_device_irqs()` to keep threaded handlers quiet during resume has to treat it separately.
 - **A slow link looks like an unplug.** "Link not up within 100 ms" became "the card is gone", then "the card was replaced", then a removal. Each step is reasonable on its own.
