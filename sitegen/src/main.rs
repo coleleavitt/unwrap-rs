@@ -11,7 +11,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use pulldown_cmark::{Options, Parser, html};
+use std::sync::LazyLock;
+
+use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd, html};
+use syntect::html::{ClassStyle, ClassedHTMLGenerator};
+use syntect::parsing::SyntaxSet;
+use syntect::util::LinesWithEndings;
 
 const SITE_URL: &str = "https://unwrap.rs";
 
@@ -65,46 +70,80 @@ fn field<'a>(fields: &'a [(String, String)], key: &str) -> Option<&'a str> {
         .map(|(_, v)| v.as_str())
 }
 
-/// Render post Markdown to HTML. ` ```mermaid ` fences are rendered to
-/// inline SVG at build time via `mmd-svg`; everything else goes through
-/// pulldown-cmark.
+/// Render post Markdown to HTML. Fenced code blocks go through
+/// [`render_code`]; everything else is plain pulldown-cmark.
 fn render_markdown(md: &str) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_FOOTNOTES);
     options.insert(Options::ENABLE_STRIKETHROUGH);
-    let mut out = String::new();
-    let mut plain = String::new();
-    let mut lines = md.lines();
-    while let Some(line) = lines.next() {
-        if line.trim_end() != "```mermaid" {
-            plain.push_str(line);
-            plain.push('\n');
-            continue;
-        }
-        html::push_html(&mut out, Parser::new_ext(&plain, options));
-        plain.clear();
-        let mut src = String::new();
-        for line in lines.by_ref() {
-            if line.trim_end() == "```" {
-                break;
+    let mut events = Vec::new();
+    // (language, text) of the code block being collected
+    let mut code: Option<(String, String)> = None;
+    for event in Parser::new_ext(md, options) {
+        match event {
+            Event::Start(Tag::CodeBlock(kind)) => {
+                let lang = match kind {
+                    CodeBlockKind::Fenced(info) => info
+                        .split([',', ' '])
+                        .next()
+                        .unwrap_or_default()
+                        .to_string(),
+                    CodeBlockKind::Indented => String::new(),
+                };
+                code = Some((lang, String::new()));
             }
-            src.push_str(line);
-            src.push('\n');
-        }
-        match mmd_svg::render(&src) {
-            Ok(svg) => {
-                // focusable so keyboard users can scroll a wide diagram
-                let _ = writeln!(
-                    out,
-                    "<figure class=\"diagram\" tabindex=\"0\">{svg}</figure>"
-                );
+            Event::End(TagEnd::CodeBlock) => {
+                if let Some((lang, text)) = code.take() {
+                    events.push(Event::Html(render_code(&lang, &text).into()));
+                }
             }
-            Err(e) => panic!("mermaid block failed to render: {e}"),
+            Event::Text(text) => match &mut code {
+                Some((_, buf)) => buf.push_str(&text),
+                None => events.push(Event::Text(text)),
+            },
+            other => events.push(other),
         }
     }
-    html::push_html(&mut out, Parser::new_ext(&plain, options));
+    let mut out = String::new();
+    html::push_html(&mut out, events.into_iter());
     out
+}
+
+/// Grammars for build-time highlighting (Sublime syntaxes bundled with syntect).
+static SYNTAXES: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
+
+/// One fenced code block as HTML, rendered at build time so pages need no
+/// script: `mermaid` becomes an inline SVG diagram, a known language gets
+/// `hl-*` classed spans (colors live in `index.css`), anything else, such
+/// as logs and tool output, stays plain.
+fn render_code(lang: &str, code: &str) -> String {
+    if lang == "mermaid" {
+        let svg =
+            mmd_svg::render(code).unwrap_or_else(|e| panic!("mermaid block failed to render: {e}"));
+        // focusable so keyboard users can scroll a wide diagram
+        return format!("<figure class=\"diagram\" tabindex=\"0\">{svg}</figure>\n");
+    }
+    let syntax = SYNTAXES
+        .find_syntax_by_token(lang)
+        .filter(|s| !lang.is_empty() && s.name != "Plain Text");
+    let Some(syntax) = syntax else {
+        return format!("<pre><code>{}</code></pre>\n", esc(code));
+    };
+    let mut hl = ClassedHTMLGenerator::new_with_class_style(
+        syntax,
+        &SYNTAXES,
+        ClassStyle::SpacedPrefixed { prefix: "hl-" },
+    );
+    for line in LinesWithEndings::from(code) {
+        hl.parse_html_for_line_which_includes_newline(line)
+            .unwrap_or_else(|e| panic!("highlighting a {lang} block failed: {e}"));
+    }
+    format!(
+        "<pre class=\"hl\"><code class=\"language-{}\">{}</code></pre>\n",
+        esc(lang),
+        hl.finalize()
+    )
 }
 
 /// Escape text for HTML element and attribute content.
@@ -513,6 +552,21 @@ draft: true
         assert!(html.contains("before"));
         assert!(html.contains("after"));
         assert!(!html.contains("```"));
+    }
+
+    #[test]
+    fn known_languages_get_highlight_classes() {
+        let html = render_markdown("```rust\nfn main() { let x = 1; }\n```\n");
+        assert!(html.contains("<pre class=\"hl\"><code class=\"language-rust\">"));
+        assert!(html.contains("hl-keyword") || html.contains("hl-storage"));
+    }
+
+    #[test]
+    fn logs_and_unknown_languages_stay_plain_and_escaped() {
+        let html = render_markdown("```\n<oops> & done\n```\n\n```txt\nplain\n```\n");
+        assert!(html.contains("<pre><code>&lt;oops&gt; &amp; done\n</code></pre>"));
+        assert!(html.contains("<pre><code>plain\n</code></pre>"));
+        assert!(!html.contains("hl-"));
     }
 
     #[test]
