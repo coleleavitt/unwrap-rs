@@ -8,7 +8,7 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
     <section class="section" aria-labelledby="experience-heading">
       <h2 id="experience-heading" class="section-label">Experience</h2>
       <ul class="entries">
-        <li><div class="entry-static"><span class="entry-name">Principal Security Engineer</span><span class="entry-desc">Security engineering as an individual contributor</span><span class="entry-meta">2024–now</span></div></li>
+        <li><div class="entry-static"><span class="entry-name">Foundations Investment Advisors</span><span class="entry-desc">Principal Security Engineer. Built ERS, the firm's entity-resolution and data platform in Rust: provider sync, a ClickHouse warehouse, record matching, and a signed GraphQL API</span><span class="entry-meta">2024–now</span></div></li>
       </ul>
     </section>
     <section class="section" aria-labelledby="research-heading">
@@ -61,7 +61,7 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
       <h2 id="education-heading" class="section-label">Education</h2>
       <ul class="entries">
         <li><div class="entry-static"><span class="entry-name">University of Arizona</span><span class="entry-desc">Computer Science; left to work full time</span><span class="entry-meta">2023–2024</span></div></li>
-        <li><div class="entry-static"><span class="entry-name">Pima JTED</span><span class="entry-desc">Cybersecurity and Artificial Intelligence, with dual enrollment at Pima Community College</span><span class="entry-meta">2021–2023</span></div></li>
+        <li><div class="entry-static"><span class="entry-name">Pima JTED</span><span class="entry-desc">Cybersecurity, and Artificial Intelligence Software &amp; Development, with dual enrollment at Pima Community College</span><span class="entry-meta">2021–2023</span></div></li>
       </ul>
     </section>
 </div>
