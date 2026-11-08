@@ -593,7 +593,8 @@ a {
     body {
         min-height: 0;
         background: none;
-        font-size: 10pt;
+        font-size: 9.5pt;
+        line-height: 1.45;
     }
 
     .page {
@@ -634,7 +635,7 @@ a {
     }
 
     .section + .section {
-        margin-top: 1rem;
+        margin-top: 0.8rem;
     }
 
     .section-label {

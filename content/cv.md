@@ -8,7 +8,12 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
     <section class="section" aria-labelledby="experience-heading">
       <h2 id="experience-heading" class="section-label">Experience</h2>
       <ul class="entries">
-        <li><div class="entry-static"><span class="entry-name">Foundations Investment Advisors</span><span class="entry-desc">Principal Security Engineer. Built ERS, the firm's entity-resolution and data platform in Rust. It syncs about 19 million records a day from 7 providers into a 1.4-billion-row ClickHouse warehouse, matches records across them, and serves them through a signed GraphQL API</span><span class="entry-meta">2025-11–now</span></div></li>
+        <li>
+          <div class="entry-static"><span class="entry-name">Foundations Investment Advisors</span><span class="entry-desc">Principal Security Engineer. Built ERS, the firm's entity-resolution and data platform in Rust. It syncs about 19 million records a day from 7 providers into a 1.4-billion-row ClickHouse warehouse, matches records across them, and serves them through a signed GraphQL API</span><span class="entry-meta">2025-11–now</span></div>
+          <ul class="entry-refs">
+            <li>Found and reported an exposure of Social Security numbers in a third-party platform the firm uses; the vendor fixed it</li>
+          </ul>
+        </li>
         <li><div class="entry-static"><span class="entry-name">Bru Credit</span><span class="entry-desc">Linux Administrator and Full-Stack Developer (remote). Built an automated credit-analysis platform and moved its infrastructure from AWS and GCP to on-premise Proxmox and ESXi</span><span class="entry-meta">2025-02–2025-06</span></div></li>
       </ul>
     </section>
