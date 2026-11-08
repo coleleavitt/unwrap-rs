@@ -11,7 +11,9 @@ decoder](https://unwrap.rs/writing/xtensa-decoder-apartment-wifi/).
 - `src/lib.rs`: decoding and printing, following LLVM's
   `XtensaDisassembler.cpp` and `XtensaInstPrinter.cpp`. Special and user
   registers are the ones `llvm-mc -mcpu=esp32` accepts.
-- `src/web.rs` (wasm32 only): makes each `.xtensa-demo` on a page live.
+- `src/web.rs` (wasm32 only): makes each `.xtensa-demo` on a page live. The site's
+  Trunk hook builds it with content-hashed file names and writes the `boot-<hash>.js`
+  loader.
 - `src/bin/xtensa-dis.rs`: prints one instruction per input line in
   `llvm-mc`'s format, for the check below.
 
