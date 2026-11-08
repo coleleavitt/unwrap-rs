@@ -457,6 +457,61 @@ a {
     background: none;
 }
 
+/* Syntax highlighting, rendered at build time by sitegen (syntect,
+   classed spans, no script). The accent plus a few tints; every color
+   passes WCAG AA on the code background. */
+.post-body .hl code {
+    color: #e8def0;
+}
+
+.hl .hl-comment {
+    color: #958aa3;
+    font-style: italic;
+}
+
+.hl .hl-keyword,
+.hl .hl-storage {
+    color: var(--accent);
+}
+
+.hl .hl-keyword.hl-operator,
+.hl .hl-punctuation {
+    color: #a99bb6;
+}
+
+.hl .hl-entity.hl-name {
+    color: #f6ecff;
+    font-weight: 700;
+}
+
+.hl .hl-support.hl-function,
+.hl .hl-support.hl-macro,
+.hl .hl-entity.hl-name.hl-macro {
+    color: #c9a6ff;
+    font-weight: 400;
+}
+
+.hl .hl-support.hl-type,
+.hl .hl-support.hl-class,
+.hl .hl-entity.hl-name.hl-type {
+    color: #f0b6ff;
+}
+
+.hl .hl-string,
+.hl .hl-string .hl-punctuation {
+    color: #9fdcbc;
+}
+
+.hl .hl-constant,
+.hl .hl-storage.hl-modifier.hl-lifetime {
+    color: #ff9ed8;
+}
+
+.hl .hl-meta.hl-annotation,
+.hl .hl-meta.hl-attribute {
+    color: #958aa3;
+}
+
 /* Diagrams keep their natural size (readable text) and scroll inside
    their frame on narrow screens, like code blocks. */
 .post-body .diagram {
