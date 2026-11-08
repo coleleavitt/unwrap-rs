@@ -54,6 +54,42 @@ a {
 
 /* One column for every page. Clipping here also keeps the 3D particles
    from inflating the scrollable area (Firefox projects near-camera glyphs). */
+/*
+ * Thorny vines down both side margins, on every page. Screens only, and
+ * only where each margin is wide enough to hold one clear of the text.
+ * The tile repeats without a seam (drawn by ~/Pictures/skull_roses/site_tile.py).
+ */
+@media screen and (min-width: 80rem) {
+    body {
+        position: relative;
+        isolation: isolate;
+    }
+
+    body::before,
+    body::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        z-index: -1;
+        width: calc((100% - var(--column)) / 2);
+        background-repeat: repeat-y;
+        background-position: center top 2rem;
+        background-size: 170px auto;
+        pointer-events: none;
+    }
+
+    body::before {
+        left: 0;
+        background-image: url("/vine-left.webp");
+    }
+
+    body::after {
+        right: 0;
+        background-image: url("/vine-right.webp");
+    }
+}
+
 .page {
     box-sizing: border-box;
     min-height: 100svh;

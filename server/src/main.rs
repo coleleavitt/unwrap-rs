@@ -82,6 +82,7 @@ fn content_type_for(name: &str) -> &'static str {
         Some("xml") => "application/xml; charset=utf-8",
         Some("png") => "image/png",
         Some("jpg" | "jpeg") => "image/jpeg",
+        Some("webp") => "image/webp",
         Some("ico") => "image/x-icon",
         Some("woff2") => "font/woff2",
         Some("woff") => "font/woff",
@@ -345,6 +346,7 @@ mod tests {
             "application/xml; charset=utf-8"
         );
         assert_eq!(content_type_for("pgp.asc"), "application/pgp-keys");
+        assert_eq!(content_type_for("vine-left.webp"), "image/webp");
         assert_eq!(
             content_type_for("THIRD-PARTY-NOTICES.md"),
             "text/markdown; charset=utf-8"
