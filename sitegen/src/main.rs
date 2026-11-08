@@ -310,7 +310,7 @@ fn site_header(home: bool) -> String {
     };
     // The portrait appears on the homepage only, beside the name.
     let portrait = if home {
-        r#"<img class="portrait" src="/cole.jpg" width="128" height="128" alt="Cole Leavitt" decoding="async" />"#
+        r#"<img class="portrait" src="/cole.jpg" width="176" height="176" alt="Cole Leavitt" decoding="async" />"#
     } else {
         ""
     };
@@ -1145,7 +1145,7 @@ draft: true
         assert_eq!(
             home.replace(r#"<h1 class="name">Cole Leavitt</h1>"#, "")
                 .replace(
-                    r#"<img class="portrait" src="/cole.jpg" width="128" height="128" alt="Cole Leavitt" decoding="async" />"#,
+                    r#"<img class="portrait" src="/cole.jpg" width="176" height="176" alt="Cole Leavitt" decoding="async" />"#,
                     ""
                 ),
             site_header(false).replace(r#"<p class="name"><a href="/">Cole Leavitt</a></p>"#, "")
