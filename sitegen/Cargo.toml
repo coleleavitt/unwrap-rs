@@ -16,7 +16,8 @@ pulldown-cmark = { version = "0.13.6", default-features = false, features = ["ht
 mmd-svg = { path = "../../mmd-svg" }
 # Build-time syntax highlighting (Sublime grammars, as used by bat and zola);
 # fancy-regex keeps it pure Rust. Output is classed spans, styled in index.css.
-syntect = { version = "5.3.0", default-features = false, features = ["default-syntaxes", "html", "regex-fancy"] }
+# yaml-load reads the vendored syntaxes/Rust.sublime-syntax.
+syntect = { version = "5.3.0", default-features = false, features = ["default-syntaxes", "html", "regex-fancy", "yaml-load"] }
 
 [lints]
 workspace = true
