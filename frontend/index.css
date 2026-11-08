@@ -580,6 +580,10 @@ a {
 
 /* Printing (the CV in particular): dark text on white, compact rows, no
    glow or screen-only links, link targets written out, rows kept whole. */
+@page {
+    margin: 0.5in;
+}
+
 @media print {
     :root {
         --bg: #fff;

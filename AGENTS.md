@@ -10,7 +10,8 @@ This file exists for agents that read `AGENTS.md`. `CLAUDE.md` is the primary gu
 
 ## Layout
 
-- `frontend/index.html`: static homepage (name, sentence, links, Work list), metadata, JSON-LD, Trunk asset directives.
+- `frontend/index.html`: homepage shell (metadata, JSON-LD, Trunk directives, animation mount) with `sitegen:header`, `sitegen:sections` and `sitegen:latest` markers.
+- `content/entries.toml`: every dated entry (homepage sections and `/cv/`), rendered by `sitegen/src/entries.rs`. Edit facts here only.
 - `frontend/src/main.rs` + `frontend/src/app/typing_animation/`: the animation, mounted into `#animation-mount` (not under reduced motion).
 - `content/writing/*.md` + `sitegen/`: writing pages, Atom feed, sitemap, homepage latest posts. Run by `deploy.sh` after `trunk build`.
 - `frontend/index.css`, `frontend/fonts/`: one stylesheet for all pages; self-hosted JetBrains Mono.
@@ -20,7 +21,7 @@ This file exists for agents that read `AGENTS.md`. `CLAUDE.md` is the primary gu
 ## Rules
 
 - Keep every visible claim true and specific. Never imply affiliation with JPL, NASA, or an employer.
-- Keep the GitHub/LinkedIn/Email links identical in `frontend/index.html`, sitegen's `SITE_HEADER`, and the server's `SOCIAL_LINKS`.
+- Keep the GitHub/LinkedIn/Email links identical in sitegen's `SITE_HEADER` (the one header for every page) and the server's `SOCIAL_LINKS`.
 - Keep metadata, sitemap, and social card consistent with the page.
 - Preserve keyboard focus, 44 px touch targets, and the reduced-motion path.
 - Do not add trackers, third-party scripts, CDN fonts, SSR, databases, or Docker.
