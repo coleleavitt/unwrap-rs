@@ -23,6 +23,7 @@ description: Cole Leavitt's CV: security research, Linux kernel work, open-sourc
             <li>CISA VINCE VU#396042 coordinated disclosure</li>
           </ul>
         </li>
+        <li><div class="entry-static"><span class="entry-name">PayRange</span><span class="entry-desc">Rewarded finding in PayRange's bug bounty program; details private under the program's disclosure terms</span><span class="entry-meta">2026-09</span></div></li>
       </ul>
     </section>
     <section class="section" aria-labelledby="kernel-heading">
