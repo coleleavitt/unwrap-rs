@@ -149,9 +149,11 @@ fn inline_scripts(html: &str) -> Vec<&str> {
     scripts
 }
 
-/// Headers added to every static response.
+/// Headers added to every static response, and the body for unknown paths.
 struct SiteHeaders {
     csp: HeaderValue,
+    /// `dist/404.html` as read at startup; plain text when the build has none.
+    not_found_page: Option<Vec<u8>>,
 }
 
 /// Build a buffered response with a fixed content type and the site's
@@ -184,12 +186,11 @@ fn respond(
 }
 
 fn not_found(headers: &SiteHeaders) -> Response<ResponseBody> {
-    respond(
-        headers,
-        StatusCode::NOT_FOUND,
-        "text/plain; charset=utf-8",
-        b"404 Not Found".to_vec(),
-    )
+    let (content_type, body) = headers.not_found_page.as_ref().map_or_else(
+        || ("text/plain; charset=utf-8", b"404 Not Found".to_vec()),
+        |page| ("text/html; charset=utf-8", page.clone()),
+    );
+    respond(headers, StatusCode::NOT_FOUND, content_type, body)
 }
 
 /// Resolve a request tail to a file path under `dist`.
@@ -260,6 +261,7 @@ async fn main() -> std::io::Result<()> {
     let csp = content_security_policy(&index_html);
     let headers = Arc::new(SiteHeaders {
         csp: HeaderValue::from_str(&csp).expect("the CSP is built from ASCII"),
+        not_found_page: std::fs::read(dist.join("404.html")).ok(),
     });
 
     // One description, four interpretations — here we drive the server.
@@ -313,6 +315,25 @@ mod tests {
         )
         .expect("write");
         dir
+    }
+
+    #[test]
+    fn unknown_paths_get_the_404_page_with_status_404() {
+        let headers = SiteHeaders {
+            csp: HeaderValue::from_static("default-src 'none'"),
+            not_found_page: Some(b"<html>gone</html>".to_vec()),
+        };
+        let response = not_found(&headers);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert_eq!(response.headers()[CONTENT_TYPE], "text/html; charset=utf-8");
+        let plain = SiteHeaders {
+            not_found_page: None,
+            ..headers
+        };
+        assert_eq!(
+            not_found(&plain).headers()[CONTENT_TYPE],
+            "text/plain; charset=utf-8"
+        );
     }
 
     #[test]

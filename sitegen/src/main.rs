@@ -30,6 +30,8 @@ struct Post {
     date: String,
     description: String,
     body_html: String,
+    /// Estimated reading time, whole minutes (at least 1).
+    reading_minutes: usize,
 }
 
 impl Post {
@@ -105,12 +107,24 @@ fn render_markdown(md: &str) -> String {
                 Some((_, buf)) => buf.push_str(&text),
                 None => events.push(Event::Text(text)),
             },
+            Event::Code(text) => events.push(Event::InlineHtml(inline_code(&text).into())),
             other => events.push(other),
         }
     }
     let mut out = String::new();
     html::push_html(&mut out, events.into_iter());
     out
+}
+
+/// Inline code that may wrap only at its spaces: each word is unbreakable,
+/// so a flag like `-march=x` never splits at its hyphen, while a long
+/// fingerprint still wraps on a phone.
+fn inline_code(text: &str) -> String {
+    let words: Vec<String> = text
+        .split(' ')
+        .map(|w| format!("<span>{}</span>", esc(w)))
+        .collect();
+    format!("<code>{}</code>", words.join(" "))
 }
 
 /// Grammars for build-time highlighting: syntect's bundled Sublime syntaxes,
@@ -218,6 +232,7 @@ const SITE_HEADER: &str = r#"<header class="intro">
       <nav class="links" aria-label="Elsewhere">
         <a href="/writing/"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 10.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/><path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2"/><path d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1z"/></svg>Writing</a>
         <a href="/cv/"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4m4-2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5M9 8a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4A.5.5 0 0 1 9 8m1 2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5"/><path d="M2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8.96q.04-.245.04-.5C9 10.567 7.21 9 5 9c-2.086 0-3.8 1.398-3.984 3.181A1 1 0 0 1 1 12z"/></svg>CV</a>
+        <a href="/uses/"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M13.5 3a.5.5 0 0 1 .5.5V11H2V3.5a.5.5 0 0 1 .5-.5zm-11-1A1.5 1.5 0 0 0 1 3.5V12h14V3.5A1.5 1.5 0 0 0 13.5 2zM0 12.5h16a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 12.5"/></svg>Uses</a>
         <a href="https://github.com/coleleavitt" rel="noopener noreferrer"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/></svg>GitHub</a>
         <a href="https://www.linkedin.com/in/coleleavitt/" rel="noopener noreferrer"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854zm4.943 12.248V6.169H2.542v7.225zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248S2.4 3.226 2.4 3.934c0 .694.521 1.248 1.327 1.248zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016l.016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225z"/></svg>LinkedIn</a>
         <a href="mailto:cole@unwrap.rs"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414zM0 4.697v7.104l5.803-3.558zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586zm3.436-.586L16 11.801V4.697z"/></svg>Email</a>
@@ -315,16 +330,35 @@ fn dated_entries<'a>(posts: impl IntoIterator<Item = &'a Post>) -> String {
     entries::entries_list(&rows)
 }
 
-fn post_page(post: &Post, css_href: &str) -> String {
+fn post_page(post: &Post, older: Option<&Post>, newer: Option<&Post>, css_href: &str) -> String {
+    let link = |p: &Post, rel: &str, label: &str| {
+        format!(
+            r#"      <a class="post-nav-{rel}" rel="{rel}" href="/writing/{slug}/"><span class="post-nav-label">{label}</span><span class="post-nav-title">{title}</span></a>
+"#,
+            slug = p.slug,
+            title = esc(&p.title),
+        )
+    };
+    let nav = if older.is_none() && newer.is_none() {
+        String::new()
+    } else {
+        format!(
+            "    <nav class=\"post-nav\" aria-label=\"More writing\">\n{}{}    </nav>\n",
+            older.map(|p| link(p, "prev", "Older")).unwrap_or_default(),
+            newer.map(|p| link(p, "next", "Newer")).unwrap_or_default(),
+        )
+    };
     let main = format!(
         r#"    <article>
       <h1 class="post-title">{title}</h1>
-      <p class="post-meta"><time datetime="{date}">{date}</time></p>
+      <p class="post-meta"><time datetime="{date}">{date}</time> · {minutes} min read</p>
       <div class="post-body">
 {body}      </div>
-    </article>"#,
+    </article>
+{nav}"#,
         title = esc(&post.title),
         date = post.date,
+        minutes = post.reading_minutes,
         body = post.body_html,
     );
     page(
@@ -334,6 +368,112 @@ fn post_page(post: &Post, css_href: &str) -> String {
         "article",
         css_href,
         &main,
+    )
+}
+
+/// A standalone page from `content/pages/<slug>.md`, served at `/<slug>/`.
+struct StaticPage {
+    slug: String,
+    title: String,
+    description: String,
+    /// `YYYY-MM-DD` the page was last brought up to date.
+    updated: String,
+    body_html: String,
+}
+
+/// Load every page in `content/pages/`; a missing directory means no pages.
+fn load_pages(dir: &Path) -> Result<Vec<StaticPage>, String> {
+    let Ok(read) = fs::read_dir(dir) else {
+        return Ok(Vec::new());
+    };
+    let mut pages = Vec::new();
+    for entry in read {
+        let path = entry.map_err(|e| format!("{}: {e}", dir.display()))?.path();
+        if path.extension().is_none_or(|e| e != "md") {
+            continue;
+        }
+        let name = path.display().to_string();
+        let src = fs::read_to_string(&path).map_err(|e| format!("{name}: {e}"))?;
+        let (fields, body) = parse_frontmatter(&src);
+        let slug = path
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        // these names already belong to other parts of the site
+        if !is_slug(&slug) || matches!(slug.as_str(), "writing" | "cv" | "api" | "fonts" | "icons")
+        {
+            return Err(format!("{name}: file name is not a free [a-z0-9-] slug"));
+        }
+        let title = field(&fields, "title").ok_or_else(|| format!("{name}: missing title"))?;
+        let updated =
+            field(&fields, "updated").ok_or_else(|| format!("{name}: missing updated"))?;
+        if !is_calendar_date(updated) {
+            return Err(format!(
+                "{name}: updated {updated:?} is not a YYYY-MM-DD calendar date"
+            ));
+        }
+        pages.push(StaticPage {
+            slug,
+            title: title.to_string(),
+            description: field(&fields, "description")
+                .unwrap_or_default()
+                .to_string(),
+            updated: updated.to_string(),
+            body_html: render_markdown(body.trim_start()),
+        });
+    }
+    pages.sort_by(|a, b| a.slug.cmp(&b.slug));
+    Ok(pages)
+}
+
+fn static_page(p: &StaticPage, css_href: &str) -> String {
+    let main = format!(
+        r#"    <article>
+      <h1 class="post-title">{title}</h1>
+      <p class="post-meta">Updated <time datetime="{updated}">{updated}</time></p>
+      <div class="post-body">
+{body}      </div>
+    </article>"#,
+        title = esc(&p.title),
+        updated = p.updated,
+        body = p.body_html,
+    );
+    page(
+        &format!("{} — Cole Leavitt", esc(&p.title)),
+        &esc(&p.description),
+        &format!("{SITE_URL}/{}/", p.slug),
+        "website",
+        css_href,
+        &main,
+    )
+}
+
+/// The page served for unknown paths (with status 404, by the server). Not
+/// indexed and without a canonical URL, since it has no address of its own.
+fn not_found_page(css_href: &str) -> String {
+    let main = r#"    <h1 class="post-title">404</h1>
+    <p class="post-meta">Not found</p>
+    <div class="post-body">
+      <p>This path returned <code>Err(NotFound)</code>. Calling <code>.unwrap()</code> on it would panic, so here is what does exist:</p>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/writing/">Writing</a></li>
+        <li><a href="/cv/">CV</a></li>
+        <li><a href="/uses/">Uses</a></li>
+      </ul>
+    </div>"#;
+    let html = page(
+        "Not found — Cole Leavitt",
+        "No page at this address.",
+        SITE_URL,
+        "website",
+        css_href,
+        main,
+    );
+    html.replace(
+        &format!("  <link rel=\"canonical\" href=\"{SITE_URL}\" />\n"),
+        "  <meta name=\"robots\" content=\"noindex\" />\n",
     )
 }
 
@@ -440,7 +580,7 @@ fn atom_feed(posts: &[Post]) -> String {
     )
 }
 
-fn sitemap(posts: &[Post]) -> String {
+fn sitemap(posts: &[Post], pages: &[StaticPage]) -> String {
     let mut urls = format!(
         "  <url>
     <loc>{SITE_URL}/</loc>
@@ -452,6 +592,14 @@ fn sitemap(posts: &[Post]) -> String {
     );
     write!(urls, "  <url>\n    <loc>{SITE_URL}/cv/</loc>\n  </url>\n")
         .expect("writing to a String cannot fail");
+    for p in pages {
+        write!(
+            urls,
+            "  <url>\n    <loc>{SITE_URL}/{}/</loc>\n  </url>\n",
+            p.slug
+        )
+        .expect("writing to a String cannot fail");
+    }
     for p in posts {
         write!(urls, "  <url>\n    <loc>{}</loc>\n  </url>\n", p.url())
             .expect("writing to a String cannot fail");
@@ -502,18 +650,39 @@ fn load_posts(content_dir: &Path) -> Result<Vec<Post>, String> {
                 "{name}: date {date:?} is not a YYYY-MM-DD calendar date"
             ));
         }
+        let body_html = render_markdown(body.trim_start());
         posts.push(Post {
+            reading_minutes: reading_minutes(&body_html),
+            body_html,
             slug,
             title: title.to_string(),
             date: date.to_string(),
             description: field(&fields, "description")
                 .unwrap_or_default()
                 .to_string(),
-            body_html: render_markdown(body.trim_start()),
         });
     }
     posts.sort_by(|a, b| b.date.cmp(&a.date).then_with(|| b.slug.cmp(&a.slug)));
     Ok(posts)
+}
+
+/// Minutes to read rendered HTML at 200 words a minute (technical prose
+/// reads slower than the usual 230-250), rounded up, at least 1.
+fn reading_minutes(html: &str) -> usize {
+    let mut text = String::with_capacity(html.len());
+    let mut in_tag = false;
+    for c in html.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => {
+                in_tag = false;
+                text.push(' ');
+            }
+            _ if !in_tag => text.push(c),
+            _ => {}
+        }
+    }
+    text.split_whitespace().count().div_ceil(200).max(1)
 }
 
 /// A post slug becomes a path segment and a URL, so keep it to `[a-z0-9-]`.
@@ -573,13 +742,25 @@ fn main() -> std::io::Result<()> {
         "writing/index.html",
         &writing_index(&posts, &css_href),
     )?;
-    for post in &posts {
+    // `posts` is newest first: the next element is the older post.
+    for (i, post) in posts.iter().enumerate() {
+        let newer = i.checked_sub(1).map(|n| &posts[n]);
         write_dist(
             &dist,
             &format!("writing/{}/index.html", post.slug),
-            &post_page(post, &css_href),
+            &post_page(post, posts.get(i + 1), newer, &css_href),
         )?;
     }
+    let pages = load_pages(&root.join("content/pages")).map_err(std::io::Error::other)?;
+    for p in &pages {
+        let _ = fs::remove_dir_all(dist.join(&p.slug));
+        write_dist(
+            &dist,
+            &format!("{}/index.html", p.slug),
+            &static_page(p, &css_href),
+        )?;
+    }
+    write_dist(&dist, "404.html", &not_found_page(&css_href))?;
     // Header and sections first: the latest-posts list skips posts the
     // finished page already links to.
     let missing = |name: &str| {
@@ -597,7 +778,7 @@ fn main() -> std::io::Result<()> {
     fs::write(dist.join("index.html"), home)?;
     write_dist(&dist, "cv/index.html", &cv_page(&entries, &css_href))?;
     write_dist(&dist, "feed.xml", &atom_feed(&posts))?;
-    write_dist(&dist, "sitemap.xml", &sitemap(&posts))?;
+    write_dist(&dist, "sitemap.xml", &sitemap(&posts, &pages))?;
 
     println!("sitegen: {} post(s), css={css_href}", posts.len());
     Ok(())
@@ -711,6 +892,68 @@ draft: true
     }
 
     #[test]
+    fn inline_code_wraps_only_between_words() {
+        let html = render_markdown("Run `-march=a -O2` and `<x>`.");
+        assert!(html.contains("<code><span>-march=a</span> <span>-O2</span></code>"));
+        assert!(html.contains("<code><span>&lt;x&gt;</span></code>"));
+    }
+
+    #[test]
+    fn reading_time_counts_text_not_markup() {
+        assert_eq!(reading_minutes("<p>short</p>"), 1);
+        let long = format!("<pre class=\"x y z\">{}</pre>", "word ".repeat(401));
+        assert_eq!(reading_minutes(&long), 3);
+    }
+
+    #[test]
+    fn posts_link_their_neighbours() {
+        let post = |slug: &str| Post {
+            slug: slug.into(),
+            title: slug.into(),
+            date: "2026-11-07".into(),
+            description: String::new(),
+            body_html: String::new(),
+            reading_minutes: 4,
+        };
+        let (old, mid, new) = (post("old"), post("mid"), post("new"));
+        let html = post_page(&mid, Some(&old), Some(&new), "/a.css");
+        assert!(html.contains(r#"rel="prev" href="/writing/old/""#));
+        assert!(html.contains(r#"rel="next" href="/writing/new/""#));
+        assert!(html.contains("· 4 min read"));
+        assert!(!post_page(&mid, None, None, "/a.css").contains("post-nav"));
+    }
+
+    #[test]
+    fn not_found_page_is_noindex_without_canonical() {
+        let html = not_found_page("/a.css");
+        assert!(html.contains(r#"<meta name="robots" content="noindex" />"#));
+        assert!(!html.contains("rel=\"canonical\""));
+        assert!(html.contains("Err(NotFound)"));
+    }
+
+    #[test]
+    fn pages_need_a_free_slug_and_a_date() {
+        let dir = std::env::temp_dir().join(format!("sitegen-pages-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("uses.md"),
+            "+++\ntitle: Uses\nupdated: 2026-11-08\n+++\nhi\n",
+        )
+        .unwrap();
+        let pages = load_pages(&dir).unwrap();
+        assert_eq!((pages[0].slug.as_str(), pages.len()), ("uses", 1));
+        assert!(static_page(&pages[0], "/a.css").contains("https://unwrap.rs/uses/"));
+        fs::write(
+            dir.join("cv.md"),
+            "+++\ntitle: X\nupdated: 2026-11-08\n+++\n",
+        )
+        .unwrap();
+        assert!(load_pages(&dir).is_err());
+        fs::remove_dir_all(&dir).unwrap();
+        assert!(load_pages(&dir).unwrap().is_empty());
+    }
+
+    #[test]
     fn feed_names_its_author() {
         assert!(atom_feed(&[]).contains("<author>\n    <name>Cole Leavitt</name>"));
     }
@@ -759,6 +1002,7 @@ draft: true
             date: "2026-11-07".into(),
             description: String::new(),
             body_html: String::new(),
+            reading_minutes: 1,
         };
         let posts = [post("featured"), post("other")];
         let home = r#"<a href="/writing/featured/">x</a><!-- sitegen:latest -->"#;
@@ -772,7 +1016,7 @@ draft: true
 
     #[test]
     fn sitemap_lists_home_and_writing() {
-        let map = sitemap(&[]);
+        let map = sitemap(&[], &[]);
         assert!(map.contains(&format!("<loc>{SITE_URL}/</loc>")));
         assert!(map.contains(&format!("<loc>{SITE_URL}/writing/</loc>")));
         assert!(map.contains(&format!("<loc>{SITE_URL}/cv/</loc>")));
