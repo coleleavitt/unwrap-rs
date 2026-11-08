@@ -3,7 +3,7 @@
 ## Bootstrap Icons 1.11.3
 
 The icons inlined in `frontend/index.html` and `sitegen/src/main.rs`
-(journal-text, github, linkedin, envelope-fill, key-fill, rss-fill) come from
+(journal-text, person-vcard, github, linkedin, envelope-fill, key-fill, rss-fill) come from
 https://icons.getbootstrap.com.
 
 ```

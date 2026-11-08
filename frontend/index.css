@@ -244,7 +244,8 @@ a {
     list-style: none;
 }
 
-.entries a {
+.entries a,
+.entries .entry-static {
     display: grid;
     grid-template-columns: var(--name-col) 1fr;
     column-gap: 1.5rem;
@@ -270,7 +271,8 @@ a {
     color: var(--accent);
 }
 
-.entries a:has(.entry-meta) {
+.entries a:has(.entry-meta),
+.entries .entry-static:has(.entry-meta) {
     grid-template-columns: var(--name-col) 1fr auto;
 }
 
@@ -343,7 +345,9 @@ a {
 
 @media (max-width: 34rem) {
     .entries a,
-    .entries a:has(.entry-meta) {
+    .entries a:has(.entry-meta),
+    .entries .entry-static,
+    .entries .entry-static:has(.entry-meta) {
         grid-template-columns: 1fr;
         row-gap: 0.125rem;
     }
@@ -565,5 +569,84 @@ a {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
+    }
+}
+
+/* The CV: longer names (roles, schools) get a wider first column. */
+.cv {
+    --name-col: 13rem;
+    margin-top: 2rem;
+}
+
+/* Printing (the CV in particular): dark text on white, compact rows, no
+   glow or screen-only links, link targets written out, rows kept whole. */
+@media print {
+    :root {
+        --bg: #fff;
+        --bg-glow: #fff;
+        --text: #111;
+        --muted: #444;
+        --faint: #bbb;
+        --accent: #6b1f8a;
+    }
+
+    body {
+        min-height: 0;
+        background: none;
+        font-size: 10pt;
+    }
+
+    .page {
+        min-height: 0;
+        padding: 0;
+        overflow: visible;
+    }
+
+    .pgp,
+    .links svg,
+    .links a[href^="/"],
+    #animation-mount {
+        display: none;
+    }
+
+    .links a::after {
+        content: " " attr(href);
+        color: var(--muted);
+    }
+
+    .links a,
+    .entries a,
+    .entries .entry-static,
+    .entry-refs a,
+    .section-more a {
+        min-height: 0;
+        padding: 0.1rem 0;
+    }
+
+    .post-title {
+        margin-top: 1rem;
+        font-size: 14pt;
+    }
+
+    .cv {
+        --name-col: 11rem;
+        margin-top: 0.75rem;
+    }
+
+    .section + .section {
+        margin-top: 1rem;
+    }
+
+    .section-label {
+        margin-bottom: 0.25rem;
+        break-after: avoid;
+    }
+
+    .entries li {
+        break-inside: avoid;
+    }
+
+    a {
+        text-decoration: none;
     }
 }
