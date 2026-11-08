@@ -34,3 +34,17 @@ THE SOFTWARE.
 
 `frontend/fonts/JetBrainsMono-latin.woff2` is a Latin subset of JetBrains Mono,
 under the SIL Open Font License 1.1 in `frontend/fonts/OFL.txt`.
+
+## Rust syntax definition (sublimehq/Packages)
+
+`sitegen/syntaxes/Rust.sublime-syntax` is `Rust/Rust.sublime-syntax` from
+https://github.com/sublimehq/Packages at commit
+7f74b54967118d74d7e2d439b19c526c025ea6b5 (2026-02-11), unmodified.
+It is used only at build time to highlight Rust code in posts.
+
+```
+Permission to copy, use, modify, sell and distribute this
+software is granted. This software is provided "as is" without
+express or implied warranty, and with no claim as to its
+suitability for any purpose.
+```

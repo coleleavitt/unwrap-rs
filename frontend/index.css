@@ -470,7 +470,8 @@ a {
 }
 
 .hl .hl-keyword,
-.hl .hl-storage {
+.hl .hl-storage.hl-modifier,
+.hl .hl-storage.hl-type.hl-function {
     color: var(--accent);
 }
 
@@ -479,22 +480,26 @@ a {
     color: #a99bb6;
 }
 
+/* types: primitives, std types, and names the grammar knows are types */
+.hl .hl-storage.hl-type,
+.hl .hl-support.hl-type,
+.hl .hl-support.hl-class,
+.hl .hl-entity.hl-name.hl-type {
+    color: #f0b6ff;
+}
+
+/* the item being defined: fn, struct, trait, impl names */
 .hl .hl-entity.hl-name {
     color: #f6ecff;
     font-weight: 700;
 }
 
 .hl .hl-support.hl-function,
+.hl .hl-variable.hl-function,
 .hl .hl-support.hl-macro,
 .hl .hl-entity.hl-name.hl-macro {
     color: #c9a6ff;
     font-weight: 400;
-}
-
-.hl .hl-support.hl-type,
-.hl .hl-support.hl-class,
-.hl .hl-entity.hl-name.hl-type {
-    color: #f0b6ff;
 }
 
 .hl .hl-string,

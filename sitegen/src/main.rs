@@ -15,7 +15,7 @@ use std::sync::LazyLock;
 
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd, html};
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
-use syntect::parsing::SyntaxSet;
+use syntect::parsing::{SyntaxDefinition, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
 const SITE_URL: &str = "https://unwrap.rs";
@@ -110,8 +110,22 @@ fn render_markdown(md: &str) -> String {
     out
 }
 
-/// Grammars for build-time highlighting (Sublime syntaxes bundled with syntect).
-static SYNTAXES: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
+/// Grammars for build-time highlighting: syntect's bundled Sublime syntaxes,
+/// plus a current Rust grammar. The bundled ones date from Sublime Text 3
+/// (sublimehq/Packages v3154); the vendored Rust grammar (sublimehq/Packages
+/// 7f74b54, see THIRD-PARTY-NOTICES.md) scopes types such as `Result` or a
+/// struct name as `storage.type`. Lookups prefer the last definition added.
+static SYNTAXES: LazyLock<SyntaxSet> = LazyLock::new(|| {
+    let mut builder = SyntaxSet::load_defaults_newlines().into_builder();
+    let rust = SyntaxDefinition::load_from_str(
+        include_str!("../syntaxes/Rust.sublime-syntax"),
+        true,
+        None,
+    )
+    .expect("the vendored Rust grammar is valid");
+    builder.add(rust);
+    builder.build()
+});
 
 /// One fenced code block as HTML, rendered at build time so pages need no
 /// script: `mermaid` becomes an inline SVG diagram, a known language gets
@@ -559,6 +573,13 @@ draft: true
         let html = render_markdown("```rust\nfn main() { let x = 1; }\n```\n");
         assert!(html.contains("<pre class=\"hl\"><code class=\"language-rust\">"));
         assert!(html.contains("hl-keyword") || html.contains("hl-storage"));
+    }
+
+    #[test]
+    fn rust_types_use_the_vendored_grammar() {
+        let html = render_markdown("```rust\nfn f(t: &Table) -> Result<u32, E> { todo!() }\n```\n");
+        // the bundled 2018 grammar gives user types no storage.type scope
+        assert!(html.contains("<span class=\"hl-storage hl-type hl-rust\">Table</span>"));
     }
 
     #[test]
